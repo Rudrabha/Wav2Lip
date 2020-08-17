@@ -1,0 +1,12 @@
+*.pkl
+*.jpg
+*.mp4
+*.pth
+*.pyc
+__pycache__
+*.h5
+*.avi
+*.wav
+filelists/*.txt
+evaluation/test_filelists/lr*.txt
+*.pyc

@@ -4,7 +4,7 @@ This code is part of the paper: _A Lip Sync Expert Is All You Need for Speech to
 
 [[Paper]](#) | [[Project Page]](http://cvit.iiit.ac.in/research/projects/cvit-projects/a-lip-sync-expert-is-all-you-need-for-speech-to-lip-generation-in-the-wild/) | [[Demo Video]](#) | [[Interactive Demo]](https://bhaasha.iiit.ac.in/lipsync) | [[ReSyncED]](#)
 
- <p align="center"><img src="https://drive.google.com/uc?export=view&id=1Wn0hPmpo4GRbCIJR8Tf20Akzdi1qjjG9"/></p
+ <img src="https://drive.google.com/uc?export=view&id=1Wn0hPmpo4GRbCIJR8Tf20Akzdi1qjjG9"/>
 
 ----------
 **Highlights**

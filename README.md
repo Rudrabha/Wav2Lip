@@ -2,7 +2,9 @@
 
 This code is part of the paper: _A Lip Sync Expert Is All You Need for Speech to Lip Generation In the Wild_ published at ACM Multimedia 2020.
 
-[[Paper]](#) | [[Project Page]](http://cvit.iiit.ac.in/research/projects/cvit-projects/a-lip-sync-expert-is-all-you-need-for-speech-to-lip-generation-in-the-wild/) | [[Demo Video]](#) | [[Interactive Demo]](#) | [[ReSyncED]](#)
+[[Paper]](#) | [[Project Page]](http://cvit.iiit.ac.in/research/projects/cvit-projects/a-lip-sync-expert-is-all-you-need-for-speech-to-lip-generation-in-the-wild/) | [[Demo Video]](#) | [[Interactive Demo]](https://bhaasha.iiit.ac.in/lipsync) | [[ReSyncED]](#)
+
+ <p align="center"><img src="https://drive.google.com/uc?export=view&id=1Wn0hPmpo4GRbCIJR8Tf20Akzdi1qjjG9"/></p
 
 ----------
 **Highlights**
@@ -25,8 +27,8 @@ Getting the weights
 ----------
 | Model  | Description |  Link to the model | 
 | :-------------: | :---------------: | :---------------: |
-| Wav2Lip  | Highly accurate lip-sync | [Link](#)  |
-| Wav2Lip + GAN  | Slightly inferior lip-sync, but better visual quality | [Link](#) |
+| Wav2Lip  | Highly accurate lip-sync | [Link](https://iiitaphyd-my.sharepoint.com/:u:/g/personal/radrabha_m_research_iiit_ac_in/Eb3LEzbfuKlJiR600lQWRxgBIY27JZg80f7V9jtMfbNDaQ?e=TBFBVW)  |
+| Wav2Lip + GAN  | Slightly inferior lip-sync, but better visual quality | [Link](https://iiitaphyd-my.sharepoint.com/:u:/g/personal/radrabha_m_research_iiit_ac_in/EdjI7bZlgApMqsVoEUUXpLsBxqXbn5z8VTmoxp55YNDcIA?e=n9ljGW) |
 
 Lip-syncing videos using the pre-trained models (Inference)
 -------

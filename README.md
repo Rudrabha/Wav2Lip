@@ -12,7 +12,7 @@ This code is part of the paper: _A Lip Sync Expert Is All You Need for Speech to
  - Lip-sync videos to any target speech with high accuracy. Try our [interactive demo](#).
  - Works for any identity, voice, and language. Also works for CGI faces and synthetic voices.
  - Complete training code, inference code, and pretrained models are available.
- - Or, quick-start with Google Colab: [Link](#)
+ - Or, quick-start with the Google Colab Notebook: [Link](https://colab.research.google.com/drive/1tZpDWXz49W6wDcTprANRGLo2D_EbD5J8?usp=sharing)
  - Several new, reliable evaluation benchmarks and metrics [[`evaluation/` folder of this repo]](https://github.com/Rudrabha/Wav2Lip/tree/master/evaluation) released.
  - Code to calculate metrics reported in the paper is also made available.
 

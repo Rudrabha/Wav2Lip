@@ -96,7 +96,17 @@ Will be updated.
 
 License and Citation
 ----------
-The software is licensed under the MIT License. Please cite the following paper if you have use this code: will be updated.
+The software is licensed under the MIT License. Please cite the following paper if you have use this code:
+```
+@misc{prajwal2020lip,
+    title={A Lip Sync Expert Is All You Need for Speech to Lip Generation In The Wild},
+    author={K R Prajwal and Rudrabha Mukhopadhyay and Vinay Namboodiri and C V Jawahar},
+    year={2020},
+    eprint={2008.10010},
+    archivePrefix={arXiv},
+    primaryClass={cs.CV}
+}
+```
 
 
 Acknowledgements

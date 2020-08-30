@@ -34,6 +34,10 @@ parser.add_argument('--wav2lip_batch_size', type=int, help='Batch size for Wav2L
 parser.add_argument('--resize_factor', default=1, type=int, 
 			help='Reduce the resolution by this factor. Sometimes, best results are obtained at 480p or 720p')
 
+parser.add_argument('--crop', nargs='+', type=int, default=[0, 0, -1, -1], 
+					help='Crop video to a smaller region (top, bottom, left, right). Applied after resize_factor arg. ' 
+					'Useful if multiple face present. -1 implies the value will be auto-inferred based on height, width')
+
 args = parser.parse_args()
 args.img_size = 96
 
@@ -179,6 +183,12 @@ def main():
 				break
 			if args.resize_factor > 1:
 				frame = cv2.resize(frame, (frame.shape[1]//args.resize_factor, frame.shape[0]//args.resize_factor))
+
+			y1, y2, x1, x2 = args.crop
+			if x2 == -1: x2 = frame.shape[1]
+			if y2 == -1: y2 = frame.shape[0]
+
+			frame = frame[y1:y2, x1:x2]
 
 			full_frames.append(frame)
 

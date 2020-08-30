@@ -63,7 +63,8 @@ def process_video_file(vfile, args, gpu_id):
 			if f is None:
 				continue
 
-			cv2.imwrite(path.join(fulldir, '{}.jpg'.format(i)), f[0])
+			x1, y1, x2, y2 = f
+			cv2.imwrite(path.join(fulldir, '{}.jpg'.format(i)), fb[y1:y2, x1:x2])
 
 def process_audio_file(vfile, args):
 	vidname = os.path.basename(vfile).split('.')[0]

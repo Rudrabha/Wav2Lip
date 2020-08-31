@@ -76,7 +76,7 @@ class Dataset(object):
         if type(start_frame) == int:
             start_frame_num = start_frame
         else:
-            start_frame_num = self.get_frame_id(start_frame) + 1 # 0-indexing ---> 1-indexing
+            start_frame_num = self.get_frame_id(start_frame) # 0-indexing ---> 1-indexing
         start_idx = int(80. * (start_frame_num / float(hparams.fps)))
         
         end_idx = start_idx + syncnet_mel_step_size

@@ -38,6 +38,10 @@ parser.add_argument('--crop', nargs='+', type=int, default=[0, -1, 0, -1],
 					help='Crop video to a smaller region (top, bottom, left, right). Applied after resize_factor arg. ' 
 					'Useful if multiple face present. -1 implies the value will be auto-inferred based on height, width')
 
+parser.add_argument('--box', nargs='+', type=int, default=[-1, -1, -1, -1], 
+					help='Specify a constant bounding box for the face. Use only as a last resort if the face is not detected.'
+					'Also, might work only if the face is not moving around much. Syntax: (top, bottom, left, right).')
+
 args = parser.parse_args()
 args.img_size = 96
 
@@ -94,10 +98,15 @@ def face_detect(images):
 def datagen(frames, mels):
 	img_batch, mel_batch, frame_batch, coords_batch = [], [], [], []
 
-	if not args.static:
-		face_det_results = face_detect(frames) # BGR2RGB for CNN face detection
+	if args.box[0] == -1:
+		if not args.static:
+			face_det_results = face_detect(frames) # BGR2RGB for CNN face detection
+		else:
+			face_det_results = face_detect([frames[0]])
 	else:
-		face_det_results = face_detect([frames[0]])
+		print('Using the specified bounding box instead of face detection...')
+		y1, y2, x1, x2 = args.box
+		face_det_results = [[f[y1: y2, x1:x2], (y1, y2, x1, x2)] for f in frames]
 
 	for i, m in enumerate(mels):
 		idx = 0 if args.static else i%len(frames)

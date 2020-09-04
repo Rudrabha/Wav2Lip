@@ -35,12 +35,16 @@ parser.add_argument('--resize_factor', default=1, type=int,
 			help='Reduce the resolution by this factor. Sometimes, best results are obtained at 480p or 720p')
 
 parser.add_argument('--crop', nargs='+', type=int, default=[0, -1, 0, -1], 
-					help='Crop video to a smaller region (top, bottom, left, right). Applied after resize_factor arg. ' 
+					help='Crop video to a smaller region (top, bottom, left, right). Applied after resize_factor and rotate arg. ' 
 					'Useful if multiple face present. -1 implies the value will be auto-inferred based on height, width')
 
 parser.add_argument('--box', nargs='+', type=int, default=[-1, -1, -1, -1], 
 					help='Specify a constant bounding box for the face. Use only as a last resort if the face is not detected.'
 					'Also, might work only if the face is not moving around much. Syntax: (top, bottom, left, right).')
+
+parser.add_argument('--rotate', default=False, action='store_true',
+					help='Sometimes videos taken from a phone can be flipped 90deg. If true, will flip video right by 90deg.'
+					'Use if you get a flipped result, despite feeding a normal looking video')
 
 args = parser.parse_args()
 args.img_size = 96
@@ -80,6 +84,7 @@ def face_detect(images):
 	pady1, pady2, padx1, padx2 = args.pads
 	for rect, image in zip(predictions, images):
 		if rect is None:
+			cv2.imwrite('temp/faulty_frame.jpg', image) # check this frame where the face was not detected.
 			raise ValueError('Face not detected! Ensure the video contains a face in all the frames.')
 
 		y1 = max(0, rect[1] - pady1)
@@ -192,6 +197,9 @@ def main():
 				break
 			if args.resize_factor > 1:
 				frame = cv2.resize(frame, (frame.shape[1]//args.resize_factor, frame.shape[0]//args.resize_factor))
+
+			if args.rotate:
+				frame = cv2.rotate(frame, cv2.cv2.ROTATE_90_CLOCKWISE)
 
 			y1, y2, x1, x2 = args.crop
 			if x2 == -1: x2 = frame.shape[1]

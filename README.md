@@ -23,7 +23,7 @@ This code is part of the paper: _A Lip Sync Expert Is All You Need for Speech to
 --------
 **Terms of Use**
 --------
-The codebase should ONLY be used for non-commercial use. Any video produced using this code MUST clearly cite this repository and unambiguously portray itself as synthetically generated.   
+The codebase should ONLY be used for non-commercial purposes. Any video produced using this code MUST clearly cite this repository and unambiguously portray itself as synthetically generated.   
 
 Prerequisites
 -------------

@@ -55,7 +55,7 @@ The result is saved (by default) in `results/result_voice.mp4`. You can specify 
 
 Preparing LRS2 for training
 ----------
-Our models are trained on LRS2. Training on other datasets might require small modifications to the code.
+Our models are trained on LRS2. Training on other datasets might require small modifications to the code. Changes to FPS etc. would need significant code changes.
 ##### LRS2 dataset folder structure
 
 ```

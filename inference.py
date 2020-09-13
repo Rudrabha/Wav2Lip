@@ -97,7 +97,8 @@ def face_detect(images):
 		
 		results.append([x1, y1, x2, y2])
 
-	if not args.nosmooth: boxes = get_smoothened_boxes(np.array(results), T=5)
+	boxes = np.array(results)
+	if not args.nosmooth: boxes = get_smoothened_boxes(boxes, T=5)
 	results = [[image[y1: y2, x1:x2], (y1, y2, x1, x2)] for image, (x1, y1, x2, y2) in zip(images, boxes)]
 
 	del detector

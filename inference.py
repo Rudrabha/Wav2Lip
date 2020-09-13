@@ -46,6 +46,9 @@ parser.add_argument('--rotate', default=False, action='store_true',
 					help='Sometimes videos taken from a phone can be flipped 90deg. If true, will flip video right by 90deg.'
 					'Use if you get a flipped result, despite feeding a normal looking video')
 
+parser.add_argument('--nosmooth', default=False, action='store_true',
+					help='Prevent smoothing face detections over a short temporal window')
+
 args = parser.parse_args()
 args.img_size = 96
 
@@ -94,7 +97,7 @@ def face_detect(images):
 		
 		results.append([x1, y1, x2, y2])
 
-	boxes = get_smoothened_boxes(np.array(results), T=5)
+	if not args.nosmooth: boxes = get_smoothened_boxes(np.array(results), T=5)
 	results = [[image[y1: y2, x1:x2], (y1, y2, x1, x2)] for image, (x1, y1, x2, y2) in zip(images, boxes)]
 
 	del detector

@@ -56,7 +56,7 @@ The result is saved (by default) in `results/result_voice.mp4`. You can specify 
 
 Preparing LRS2 for training
 ----------
-Our models are trained on LRS2. Training on other datasets might require small modifications to the code. Changes to FPS etc. would need significant code changes.
+Our models are trained on LRS2. See [here](#training-on-datasets-other-than-lrs2) for a few suggestions regarding training on other datasets.
 ##### LRS2 dataset folder structure
 
 ```
@@ -89,7 +89,7 @@ Train!
 There are two major steps: (i) Train the expert lip-sync discriminator, (ii) Train the Wav2Lip model(s).
 
 ##### Training the expert discriminator
-You can download [the pre-trained weights]() if you want to skip this step. To train it:
+You can download [the pre-trained weights](#getting-the-weights) if you want to skip this step. To train it:
 ```bash
 python color_syncnet_train.py --data_root lrs2_preprocessed/ --checkpoint_dir <folder_to_save_checkpoints>
 ```
@@ -100,6 +100,17 @@ python wav2lip_train.py --data_root lrs2_preprocessed/ --checkpoint_dir <folder_
 ```
 
 To train with the visual quality discriminator, you should run `hq_wav2lip_train.py` instead. The arguments for both the files are similar. In both the cases, you can resume training as well. Look at `python wav2lip_train.py --help` for more details. You can also set additional less commonly-used hyper-parameters at the bottom of the `hparams.py` file.
+
+Training on datasets other than LRS2
+------------------------------------
+Training on other datasets might require modifications to the code. Please read the following before you raise an issue:
+
+- You might not get good results by training/fine-tuning on a few minutes of a single speaker. This is a separate research problem, to which we do not have a solution yet. Thus, we would most likely not be able to resolve your issue. 
+- You must train the expert discriminator for your own dataset before training Wav2Lip.
+- If it is your own dataset downloaded from the web, in most cases, needs to be sync-corrected.
+- Be mindful of the FPS of the videos of your dataset. Changes to FPS would need significant code changes. 
+
+When raising an issue on this topic, please let us know that you are aware of all these points.
 
 Evaluation
 ----------

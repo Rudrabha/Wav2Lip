@@ -6,3 +6,4 @@ tensorflow==1.12.0
 torch==1.1.0
 torchvision==0.3.0
 tqdm==4.45.0
+numba==0.48

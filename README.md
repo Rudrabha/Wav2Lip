@@ -109,6 +109,7 @@ Training on other datasets might require modifications to the code. Please read 
 - You must train the expert discriminator for your own dataset before training Wav2Lip.
 - If it is your own dataset downloaded from the web, in most cases, needs to be sync-corrected.
 - Be mindful of the FPS of the videos of your dataset. Changes to FPS would need significant code changes. 
+- The expert discriminator's eval loss should go down to ~0.25 and the Wav2Lip eval sync loss should go down to ~0.2 to get good results. 
 
 When raising an issue on this topic, please let us know that you are aware of all these points.
 

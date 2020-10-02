@@ -35,6 +35,7 @@ video data root (Folder containing all videos)
 ```
 python calc_scores_syncnet.py --data_root /path/to/video/data/root --tmp_dir tmp_dir/
 ```
-
+### Opening issues related to evaluation scripts
+* Please open the issues with the "Evaluation" label if you face any issues in the evaluation scripts. 
 
 

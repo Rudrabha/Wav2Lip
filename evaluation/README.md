@@ -30,11 +30,20 @@ sh download_model.sh
 video data root (Folder containing all videos)
 ├── All .mp4 files
 ```
-
+* Change the folder back to the cloned repository. 
+```
+cd syncnet_python
+```
 * To run evaluation on the LRW, LRS2 and LRS3 test files, please run the following command:
 ```
 python calculate_scores_LRS.py --data_root /path/to/video/data/root --tmp_dir tmp_dir/
 ```
+
+* To run evaluation on the ReSynced dataset or your own generated videos, please run the following command:
+```
+sh calculate_scores_real_videos.sh /path/to/video/data/root
+```
+* The generated scores will be present in the all_scores.txt generated in the ```syncnet_python/``` folder
 
 # Evaluation of image quality using FID metric.
 We will update the scripts for the FID metric shortly

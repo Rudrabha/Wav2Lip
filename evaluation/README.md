@@ -36,11 +36,15 @@ video data root (Folder containing all videos)
 python calculate_scores_LRS.py --data_root /path/to/video/data/root --tmp_dir tmp_dir/
 ```
 
-# Evaluation of Lip-sync using FID metric.
+# Evaluation of image quality using FID metric.
 We will update the scripts for the FID metric shortly
 
 
-### Opening issues related to evaluation scripts
+# Opening issues related to evaluation scripts
 * Please open the issues with the "Evaluation" label if you face any issues in the evaluation scripts. 
+
+# Acknowledgements
+Our evaluation pipeline in based on two existing repositories. LSE metrics are based on the [syncnet_python](https://github.com/joonson/syncnet_python) repository and the FID score is based on [pytorch-fid](https://github.com/mseitzer/pytorch-fid) repository. We thank the authors of both the repositories for releasing their wonderful code.
+
 
 

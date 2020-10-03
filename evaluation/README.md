@@ -19,7 +19,7 @@ sh download_model.sh
 ### Running the evaluation scripts:
 * Copy our evaluation scripts given in this folder to the cloned repository.
 ```  
-    cd WaveLip/evaluation/scores/
+    cd WaveLip/evaluation/scores_LSE/
     cp *.py syncnet_python/
     cp *.sh syncnet_python/ 
 ```

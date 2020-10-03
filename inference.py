@@ -179,9 +179,7 @@ def load_model(path):
 
 def main():
 	if not os.path.isfile(args.face):
-		fnames = list(glob(os.path.join(args.face, '*.jpg')))
-		sorted_fnames = sorted(fnames, key=lambda f: int(os.path.basename(f).split('.')[0]))
-		full_frames = [cv2.imread(f) for f in sorted_fnames]
+		raise ValueError('--face argument must be a valid path to video/image file')
 
 	elif args.face.split('.')[1] in ['jpg', 'png', 'jpeg']:
 		full_frames = [cv2.imread(args.face)]

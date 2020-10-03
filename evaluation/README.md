@@ -2,7 +2,7 @@
 
 We use the pre-trained syncnet model available in this [repository](https://github.com/joonson/syncnet_python). 
 
-### Steps to set-up the evaluation repository:
+### Steps to set-up the evaluation repository for LSE-D and LSE-C metric:
 * Clone the SyncNet repository.
 ``` 
 git clone https://github.com/joonson/syncnet_python.git 
@@ -33,8 +33,13 @@ video data root (Folder containing all videos)
 
 * To run evaluation on the LRW, LRS2 and LRS3 test files, please run the following command:
 ```
-python calc_scores_syncnet.py --data_root /path/to/video/data/root --tmp_dir tmp_dir/
+python calculate_scores_LRS.py --data_root /path/to/video/data/root --tmp_dir tmp_dir/
 ```
+
+# Evaluation of Lip-sync using FID metric.
+We will update the scripts for the FID metric shortly
+
+
 ### Opening issues related to evaluation scripts
 * Please open the issues with the "Evaluation" label if you face any issues in the evaluation scripts. 
 

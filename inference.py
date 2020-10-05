@@ -1,4 +1,5 @@
 from os import listdir, path
+from pathlib import Path
 import numpy as np
 import scipy, cv2, os, sys, argparse, audio
 import json, subprocess, random, string
@@ -48,9 +49,42 @@ parser.add_argument('--rotate', default=False, action='store_true',
 
 parser.add_argument('--nosmooth', default=False, action='store_true',
 					help='Prevent smoothing face detections over a short temporal window')
+parser.add_argument('--convert_25', default=False, action='store_true',
+					help='Convert the input video to 25 fps')
 
 args = parser.parse_args()
 args.img_size = 96
+
+def check_fps(filename):
+	"""
+	Checks the fps of a video.
+	"""
+	cmd = f'ffprobe -v error -select_streams v -of default=noprint_wrappers=1:nokey=1 -show_entries stream=r_frame_rate {filename}'
+	try:
+		op = subprocess.check_output(cmd, shell = True).decode('utf-8')
+	except CalledProcessError as e:
+		print(e.output)
+	op = op.strip().split('/')
+	op = list(map(int, op))
+	return round(op[0] / op[1]) if op[1] != 0 else 30 # if the denominator is 0, don't throw an error, convert the vid to 25 fps.
+
+def convert_to_25fps(video):
+	video = Path(video)
+	try:
+		temp_file = video.parent / (video.stem + str('temp') + video.suffix)
+		subprocess.check_output(f'cp {video} {temp_file}', shell = True)
+		subprocess.check_output(f'ffmpeg -i {temp_file} -r 25 {video} -y', shell = True)
+		os.system(f'rm {temp_file}')
+	except subprocess.CalledProcessError as e:
+		print(e.output)
+
+if args.convert_25:
+	fps = check_fps(video)
+	if fps != 25:
+		print(f'Fps of video file is {fps}. Converting it to 25')
+		convert_to_25fps(args.face)
+	else:
+		print(f'No need to convert the fps to 25')
 
 if os.path.isfile(args.face) and args.face.split('.')[1] in ['jpg', 'png', 'jpeg']:
 	args.static = True

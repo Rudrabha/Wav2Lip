@@ -62,7 +62,7 @@ def check_fps(filename):
 	cmd = f'ffprobe -v error -select_streams v -of default=noprint_wrappers=1:nokey=1 -show_entries stream=r_frame_rate {filename}'
 	try:
 		op = subprocess.check_output(cmd, shell = True).decode('utf-8')
-	except CalledProcessError as e:
+	except subprocess.CalledProcessError as e:
 		print(e.output)
 	op = op.strip().split('/')
 	op = list(map(int, op))

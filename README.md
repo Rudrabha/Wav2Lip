@@ -119,7 +119,7 @@ Will be updated.
 
 License and Citation
 ----------
-The software is licensed under the MIT License. Please cite the following paper if you have use this code:
+The software can only be used for personal/research/non-commercial purposes. Please cite the following paper if you have use this code:
 ```
 @misc{prajwal2020lip,
     title={A Lip Sync Expert Is All You Need for Speech to Lip Generation In The Wild},

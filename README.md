@@ -121,13 +121,21 @@ License and Citation
 ----------
 The software can only be used for personal/research/non-commercial purposes. Please cite the following paper if you have use this code:
 ```
-@misc{prajwal2020lip,
-    title={A Lip Sync Expert Is All You Need for Speech to Lip Generation In The Wild},
-    author={K R Prajwal and Rudrabha Mukhopadhyay and Vinay Namboodiri and C V Jawahar},
-    year={2020},
-    eprint={2008.10010},
-    archivePrefix={arXiv},
-    primaryClass={cs.CV}
+@inproceedings{10.1145/3394171.3413532,
+author = {Prajwal, K R and Mukhopadhyay, Rudrabha and Namboodiri, Vinay P. and Jawahar, C.V.},
+title = {A Lip Sync Expert Is All You Need for Speech to Lip Generation In the Wild},
+year = {2020},
+isbn = {9781450379885},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3394171.3413532},
+doi = {10.1145/3394171.3413532},
+booktitle = {Proceedings of the 28th ACM International Conference on Multimedia},
+pages = {484–492},
+numpages = {9},
+keywords = {lip sync, talking face generation, video generation},
+location = {Seattle, WA, USA},
+series = {MM '20}
 }
 ```
 

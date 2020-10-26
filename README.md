@@ -118,7 +118,7 @@ Will be updated.
 
 License and Citation
 ----------
-The software can only be used for personal/research/non-commercial purposes. Please cite the following paper if you have use this code:
+The software can only be used for personal/research/non-commercial purposes. Please cite the following paper if you use this code:
 ```
 @inproceedings{10.1145/3394171.3413532,
 author = {Prajwal, K R and Mukhopadhyay, Rudrabha and Namboodiri, Vinay P. and Jawahar, C.V.},

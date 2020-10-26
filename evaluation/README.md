@@ -1,8 +1,12 @@
-# Evaluation of Lip-sync using LSE-D and LSE-C metric.
+# Novel Evaluation Framework, new filelists, and using the LSE-D and LSE-C metric.
 
-We use the pre-trained syncnet model available in this [repository](https://github.com/joonson/syncnet_python). 
+Our paper also proposes a novel evaluation framework (Section 4). To evaluate on LRS2, LRS3, and LRW, the filelists are present in the `test_filelists` folder. Please use `gen_videos_from_filelist.py` script to generate the videos. After that, you can calculate the LSE-D and LSE-C scores using the instructions below. 
+
+The videos of the ReSyncED benchmark for real-world evaluation will be released soon. 
 
 ### Steps to set-up the evaluation repository for LSE-D and LSE-C metric:
+We use the pre-trained syncnet model available in this [repository](https://github.com/joonson/syncnet_python). 
+
 * Clone the SyncNet repository.
 ``` 
 git clone https://github.com/joonson/syncnet_python.git 

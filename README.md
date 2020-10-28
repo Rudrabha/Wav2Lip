@@ -26,7 +26,7 @@ All results from this open-source code or our [demo website](https://bhaasha.iii
 
 Prerequisites
 -------------
-- `Python 3.5.2` (code has been tested with this version at our end, but several other users say that `3.6+` is the one that works instead.)
+- `Python 3.6+` 
 - ffmpeg: `sudo apt-get install ffmpeg`
 - Install necessary packages using `pip install -r requirements.txt`
 - Face detection [pre-trained model](https://www.adrianbulat.com/downloads/python-fan/s3fd-619a316812.pth) should be downloaded to `face_detection/detection/sfd/s3fd.pth`. Alternative [link](https://iiitaphyd-my.sharepoint.com/:u:/g/personal/prajwal_k_research_iiit_ac_in/EZsy6qWuivtDnANIG73iHjIBjMSoojcIV0NULXV-yiuiIg?e=qTasa8) if the above does not work.

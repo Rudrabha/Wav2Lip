@@ -6,6 +6,7 @@ from tqdm import tqdm
 from glob import glob
 import torch, face_detection
 from models import Wav2Lip
+import platform
 
 parser = argparse.ArgumentParser(description='Inference code to lip-sync videos in the wild using Wav2Lip models')
 
@@ -273,7 +274,7 @@ def main():
 	out.release()
 
 	command = 'ffmpeg -y -i {} -i {} -strict -2 -q:v 1 {}'.format(args.audio, 'temp/result.avi', args.outfile)
-	subprocess.call(command, shell=True)
+	subprocess.call(command, shell=platform.system() != 'Windows')
 
 if __name__ == '__main__':
 	main()

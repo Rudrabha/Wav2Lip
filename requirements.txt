@@ -2,7 +2,6 @@ librosa==0.7.0
 numpy==1.17.1
 opencv-contrib-python>=4.2.0.34
 opencv-python==4.1.0.25
-tensorflow==1.12.0
 torch==1.1.0
 torchvision==0.3.0
 tqdm==4.45.0

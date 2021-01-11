@@ -1,4 +1,3 @@
-from tensorflow.contrib.training import HParams
 from glob import glob
 import os
 
@@ -12,6 +11,22 @@ def get_image_list(data_root, split):
 			filelist.append(os.path.join(data_root, line))
 
 	return filelist
+
+class HParams:
+	def __init__(self, **kwargs):
+		self.data = {}
+
+		for key, value in kwargs.items():
+			self.data[key] = value
+
+	def __getattr__(self, key):
+		if key not in self.data:
+			raise AttributeError("'HParams' object has no attribute %s" % key)
+		return self.data[key]
+
+	def set_hparam(self, key, value):
+		self.data[key] = value
+
 
 # Default hyperparameters
 hparams = HParams(

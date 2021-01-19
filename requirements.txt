@@ -1,8 +1,8 @@
 librosa==0.7.0
-numpy==1.17.1
+numpy==1.19.5
 opencv-contrib-python>=4.2.0.34
-opencv-python==4.1.0.25
-torch==1.1.0
-torchvision==0.3.0
+opencv-python==4.1.2.30
+torch==1.7.1
+torchvision==0.8.2
 tqdm==4.45.0
 numba==0.48

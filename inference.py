@@ -86,8 +86,15 @@ def face_detect(images):
 
 	results = []
 	pady1, pady2, padx1, padx2 = args.pads
+	start = end = 0
 	for rect, image in zip(predictions, images):
 		if rect is None:
+			if results:
+				break
+			if len(images)-end>1:
+				start += 1
+				end += 1
+				continue
 			cv2.imwrite('temp/faulty_frame.jpg', image) # check this frame where the face was not detected.
 			raise ValueError('Face not detected! Ensure the video contains a face in all the frames.')
 
@@ -95,24 +102,29 @@ def face_detect(images):
 		y2 = min(image.shape[0], rect[3] + pady2)
 		x1 = max(0, rect[0] - padx1)
 		x2 = min(image.shape[1], rect[2] + padx2)
-		
 		results.append([x1, y1, x2, y2])
+		end += 1
+	
+	if start or end < len(images):
+		print('skipping %d frames from beginning and %d frames from end, where no faces where detected'%(start, len(images)-end))
+	images = images[start:end]
 
 	boxes = np.array(results)
 	if not args.nosmooth: boxes = get_smoothened_boxes(boxes, T=5)
+	assert len(images)==len(boxes)
 	results = [[image[y1: y2, x1:x2], (y1, y2, x1, x2)] for image, (x1, y1, x2, y2) in zip(images, boxes)]
 
 	del detector
-	return results 
+	return results, images 
 
 def datagen(frames, mels):
 	img_batch, mel_batch, frame_batch, coords_batch = [], [], [], []
 
 	if args.box[0] == -1:
 		if not args.static:
-			face_det_results = face_detect(frames) # BGR2RGB for CNN face detection
+			face_det_results, frames = face_detect(frames) # BGR2RGB for CNN face detection
 		else:
-			face_det_results = face_detect([frames[0]])
+			face_det_results, _ = face_detect([frames[0]])
 	else:
 		print('Using the specified bounding box instead of face detection...')
 		y1, y2, x1, x2 = args.box

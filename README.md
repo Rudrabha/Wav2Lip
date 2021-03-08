@@ -6,6 +6,8 @@ This code is part of the paper: _A Lip Sync Expert Is All You Need for Speech to
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/a-lip-sync-expert-is-all-you-need-for-speech/lip-sync-on-lrs3)](https://paperswithcode.com/sota/lip-sync-on-lrs3?p=a-lip-sync-expert-is-all-you-need-for-speech)
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/a-lip-sync-expert-is-all-you-need-for-speech/lip-sync-on-lrw)](https://paperswithcode.com/sota/lip-sync-on-lrw?p=a-lip-sync-expert-is-all-you-need-for-speech)
 
+|Original Paper|Project Page|Demo|Live Testing|Colab Notebook|ReSyncED|
+|:-:|:-:|:-:|:-:|:-:|:-:|
 [[Paper]](http://arxiv.org/abs/2008.10010) | [[Project Page]](http://cvit.iiit.ac.in/research/projects/cvit-projects/a-lip-sync-expert-is-all-you-need-for-speech-to-lip-generation-in-the-wild/) | [[Demo Video]](https://youtu.be/0fXaDCZNOJc) | [[Interactive Demo]](https://bhaasha.iiit.ac.in/lipsync) | [[Colab Notebook]](https://colab.research.google.com/drive/1tZpDWXz49W6wDcTprANRGLo2D_EbD5J8?usp=sharing) | [[ReSyncED] (coming soon)](#)
 
  <img src="https://drive.google.com/uc?export=view&id=1Wn0hPmpo4GRbCIJR8Tf20Akzdi1qjjG9"/>

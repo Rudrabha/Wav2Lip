@@ -76,8 +76,6 @@ class Dataset(object):
             vidname = self.all_videos[idx]
 
             img_names = list(glob(join(vidname, '*.jpg')))
-            # print(img_names)
-
             if len(img_names) <= 3 * syncnet_T:
                 continue
             img_name = random.choice(img_names)

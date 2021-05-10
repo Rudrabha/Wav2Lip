@@ -16,6 +16,10 @@ from glob import glob
 import os, random, cv2, argparse
 from hparams import hparams, get_image_list
 
+from multiprocessing import Manager
+
+
+
 parser = argparse.ArgumentParser(description='Code to train the expert lip-sync discriminator')
 
 parser.add_argument("--data_root", help="Root folder of the preprocessed LRS2 dataset", required=True)
@@ -35,9 +39,9 @@ syncnet_T = 5
 syncnet_mel_step_size = 16
 
 class Dataset(object):
-    def __init__(self, split):
+    def __init__(self, split, shared_dict):
         self.all_videos = get_image_list(args.data_root, split)
-
+        self.shared_dict = shared_dict
     def get_frame_id(self, frame):
         return int(basename(frame).split('.')[0])
 
@@ -72,6 +76,8 @@ class Dataset(object):
             vidname = self.all_videos[idx]
 
             img_names = list(glob(join(vidname, '*.jpg')))
+            # print(img_names)
+
             if len(img_names) <= 3 * syncnet_T:
                 continue
             img_name = random.choice(img_names)
@@ -109,9 +115,12 @@ class Dataset(object):
 
             try:
                 wavpath = join(vidname, "audio.wav")
-                wav = audio.load_wav(wavpath, hparams.sample_rate)
-
-                orig_mel = audio.melspectrogram(wav).T
+                if wavpath not in self.shared_dict:
+                    wav = audio.load_wav(wavpath, hparams.sample_rate)
+                    orig_mel = audio.melspectrogram(wav).T
+                    self.shared_dict[wavpath] = orig_mel
+                else:
+                    orig_mel = self.shared_dict[wavpath]
             except Exception as e:
                 continue
 
@@ -249,9 +258,11 @@ if __name__ == "__main__":
 
     if not os.path.exists(checkpoint_dir): os.mkdir(checkpoint_dir)
 
+    manager = Manager()
+    shared_dict = manager.dict()
     # Dataset and Dataloader setup
-    train_dataset = Dataset('train')
-    test_dataset = Dataset('val')
+    train_dataset = Dataset('train', shared_dict)
+    test_dataset = Dataset('val', shared_dict)
 
     train_data_loader = data_utils.DataLoader(
         train_dataset, batch_size=hparams.syncnet_batch_size, shuffle=True,

@@ -16,6 +16,8 @@ from glob import glob
 
 import os, random, cv2, argparse
 from hparams import hparams, get_image_list
+from multiprocessing import Manager
+
 
 parser = argparse.ArgumentParser(description='Code to train the Wav2Lip model without the visual quality discriminator')
 
@@ -38,8 +40,9 @@ syncnet_T = 5
 syncnet_mel_step_size = 16
 
 class Dataset(object):
-    def __init__(self, split):
+    def __init__(self, split,shared_dict):
         self.all_videos = get_image_list(args.data_root, split)
+        self.shared_dict = shared_dict
 
     def get_frame_id(self, frame):
         return int(basename(frame).split('.')[0])
@@ -136,9 +139,12 @@ class Dataset(object):
 
             try:
                 wavpath = join(vidname, "audio.wav")
-                wav = audio.load_wav(wavpath, hparams.sample_rate)
-
-                orig_mel = audio.melspectrogram(wav).T
+                if wavpath not in self.shared_dict:
+                    wav = audio.load_wav(wavpath, hparams.sample_rate)
+                    orig_mel = audio.melspectrogram(wav).T
+                    self.shared_dict[wavpath] = orig_mel
+                else:
+                    orig_mel = self.shared_dict[wavpath]
             except Exception as e:
                 continue
 
@@ -338,9 +344,11 @@ def load_checkpoint(path, model, optimizer, reset_optimizer=False, overwrite_glo
 if __name__ == "__main__":
     checkpoint_dir = args.checkpoint_dir
 
+    manager = Manager()
+    shared_dict = manager.dict()
     # Dataset and Dataloader setup
-    train_dataset = Dataset('train')
-    test_dataset = Dataset('val')
+    train_dataset = Dataset('train', shared_dict)
+    test_dataset = Dataset('val', shared_dict)
 
     train_data_loader = data_utils.DataLoader(
         train_dataset, batch_size=hparams.batch_size, shuffle=True,

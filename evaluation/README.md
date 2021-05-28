@@ -50,7 +50,7 @@ sh calculate_scores_real_videos.sh /path/to/video/data/root
 * The generated scores will be present in the all_scores.txt generated in the ```syncnet_python/``` folder
 
 # Evaluation of image quality using FID metric.
-We will update the scripts for the FID metric shortly
+We use the [pytorch-fid](https://github.com/mseitzer/pytorch-fid) repository for calculating the FID metrics. We dump all the frames in both ground-truth and generated videos and calculate the FID score. 
 
 
 # Opening issues related to evaluation scripts

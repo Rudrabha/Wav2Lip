@@ -122,7 +122,7 @@ Please check the `evaluation/` folder for the instructions.
 
 License and Citation
 ----------
-The software can only be used for personal/research/non-commercial purposes. Please cite the following paper if you use this code:
+Theis repository can only be used for personal/research/non-commercial purposes. However, for commercial requests, please contact us directly at radrabha.m@research.iiit.ac.in or prajwal.k@research.iiit.ac.in. Please cite the following paper if you use this code:
 ```
 @inproceedings{10.1145/3394171.3413532,
 author = {Prajwal, K R and Mukhopadhyay, Rudrabha and Namboodiri, Vinay P. and Jawahar, C.V.},

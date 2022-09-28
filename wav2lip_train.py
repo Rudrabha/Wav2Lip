@@ -135,10 +135,15 @@ class Dataset(object):
                 continue
 
             try:
-                wavpath = join(vidname, "audio.wav")
-                wav = audio.load_wav(wavpath, hparams.sample_rate)
-
-                orig_mel = audio.melspectrogram(wav).T
+                orig_mel_path = join(vidname, "audio.npy")
+                if os.path.isfile(orig_mel_path):
+                    orig_mel = np.load(orig_mel_path)
+                else:
+                    wavpath = join(vidname, "audio.wav")
+                    wav = audio.load_wav(wavpath, hparams.sample_rate)
+                    
+                    orig_mel = audio.melspectrogram(wav).T
+                    np.save(orig_mel_path, orig_mel)
             except Exception as e:
                 continue
 

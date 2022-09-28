@@ -87,6 +87,7 @@ preprocessed_root (lrs2_preprocessed)
 |	├── Folders with five-digit numbered video IDs
 |	│   ├── *.jpg
 |	│   ├── audio.wav
+|	│   ├── audio.npy
 ```
 
 Train!

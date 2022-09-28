@@ -78,6 +78,11 @@ def process_audio_file(vfile, args):
 	command = template.format(vfile, wavpath)
 	subprocess.call(command, shell=True)
 
+	orig_mel_path = path.join(fulldir, "audio.npy")
+	wav = audio.load_wav(wavpath, hp.sample_rate)
+	orig_mel = audio.melspectrogram(wav).T
+	np.save(orig_mel_path, orig_mel)
+
 	
 def mp_handler(job):
 	vfile, args, gpu_id = job

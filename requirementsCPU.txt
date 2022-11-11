@@ -3,7 +3,7 @@ numpy
 opencv-contrib-python
 opencv-python
 -f https://download.pytorch.org/whl/torch_stable.html
-torch==+cpu 
-torchvision==+cpu
+torch
+torchvision
 tqdm
 numba

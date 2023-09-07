@@ -14,8 +14,9 @@ models_urls = {
 
 
 class SFDDetector(FaceDetector):
-    def __init__(self, device, path_to_detector=os.path.join(os.path.dirname(os.path.abspath(__file__)), 's3fd.pth'), verbose=False):
-        super(SFDDetector, self).__init__(device, verbose)
+    @classmethod
+    def load_model(cls, device):
+        path_to_detector = os.path.join(os.path.dirname(os.path.abspath(__file__)), 's3fd.pth')
 
         # Initialise the face detector
         if not os.path.isfile(path_to_detector):
@@ -23,10 +24,10 @@ class SFDDetector(FaceDetector):
         else:
             model_weights = torch.load(path_to_detector)
 
-        self.face_detector = s3fd()
-        self.face_detector.load_state_dict(model_weights)
-        self.face_detector.to(device)
-        self.face_detector.eval()
+        cls.face_detector = s3fd()
+        cls.face_detector.load_state_dict(model_weights)
+        cls.face_detector.to(device)
+        cls.face_detector.eval()
 
     def detect_from_image(self, tensor_or_path):
         image = self.tensor_or_path_to_ndarray(tensor_or_path)

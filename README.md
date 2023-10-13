@@ -1,6 +1,8 @@
 # **Wav2Lip**: *Accurately Lip-syncing Videos In The Wild*
 
-For commercial requests, please contact us at radrabha.m@research.iiit.ac.in or prajwal.k@research.iiit.ac.in. We have an HD model ready that can be used commercially.
+Are you looking to integrate this into a product? We have a turn-key hosted API with new and improved lip-syncing models here: https://synclabs.so/
+
+For any other commercial licenscing requests, please contact us at radrabha.m@research.iiit.ac.in or prajwal.k@research.iiit.ac.in.
 
 This code is part of the paper: _A Lip Sync Expert Is All You Need for Speech to Lip Generation In the Wild_ published at ACM Multimedia 2020. 
 
@@ -11,8 +13,8 @@ This code is part of the paper: _A Lip Sync Expert Is All You Need for Speech to
 |📑 Original Paper|📰 Project Page|🌀 Demo|⚡ Live Testing|📔 Colab Notebook
 |:-:|:-:|:-:|:-:|:-:|
 [Paper](http://arxiv.org/abs/2008.10010) | [Project Page](http://cvit.iiit.ac.in/research/projects/cvit-projects/a-lip-sync-expert-is-all-you-need-for-speech-to-lip-generation-in-the-wild/) | [Demo Video](https://youtu.be/0fXaDCZNOJc) | [Interactive Demo](https://bhaasha.iiit.ac.in/lipsync) | [Colab Notebook](https://colab.research.google.com/drive/1tZpDWXz49W6wDcTprANRGLo2D_EbD5J8?usp=sharing) /[Updated Collab Notebook](https://colab.research.google.com/drive/1IjFW1cLevs6Ouyu4Yht4mnR4yeuMqO7Y#scrollTo=MH1m608OymLH)
-
- <img src="https://drive.google.com/uc?export=view&id=1Wn0hPmpo4GRbCIJR8Tf20Akzdi1qjjG9"/>
+ 
+![Logo](https://drive.google.com/uc?export=view&id=1Wn0hPmpo4GRbCIJR8Tf20Akzdi1qjjG9)
 
 ----------
 **Highlights**

@@ -1,0 +1,35 @@
+# Configuration for Cog ⚙️
+# Reference: https://github.com/replicate/cog/blob/main/docs/yaml.md
+
+image: r8.im/devxpy/cog-wav2lip
+
+build:
+  # set to true if your model requires a GPU
+  gpu: true
+  cuda: "11.6.2"
+
+  # a list of ubuntu apt packages to install
+  system_packages:
+     - ffmpeg
+     - cmake
+
+  # python version in the form '3.8' or '3.8.12'
+  python_version: "3.8"
+
+  # a list of packages in the format <package-name>==<version>
+  python_packages:
+    - numpy==1.23.4
+    - librosa==0.7.0
+    - opencv-python==4.6.0.66
+    - torch==1.12.1+cu116 --extra-index-url=https://download.pytorch.org/whl/cu116
+    - torchvision==0.13.1+cu116 --extra-index-url=https://download.pytorch.org/whl/cu116
+    - tqdm==4.45.0
+    - numba==0.48
+    - mediapipe==0.8.11
+
+  # commands run after the environment is setup
+  run:
+    - pip install git+https://github.com/elliottzheng/batch-face.git@master
+
+# predict.py defines how predictions are run on your model
+predict: "predict.py:Predictor"

@@ -1,0 +1,7 @@
+numpy==1.23.4
+librosa
+opencv-python
+torch
+torchvision
+tqdm
+numba

@@ -2,7 +2,7 @@
 
 Are you looking to integrate this into a product? We have a turn-key hosted API with new and improved lip-syncing models here: https://synclabs.so/
 
-For any other commercial licenscing requests, please contact us at radrabha.m@research.iiit.ac.in or prajwal.k@research.iiit.ac.in.
+For any other commercial licensing requests, please contact us at radrabha.m@research.iiit.ac.in or prajwal.k@research.iiit.ac.in.
 
 This code is part of the paper: _A Lip Sync Expert Is All You Need for Speech to Lip Generation In the Wild_ published at ACM Multimedia 2020. 
 

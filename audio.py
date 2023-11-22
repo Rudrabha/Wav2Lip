@@ -37,7 +37,7 @@ def get_hop_size():
 def linearspectrogram(wav):
     D = _stft(preemphasis(wav, hp.preemphasis, hp.preemphasize))
     S = _amp_to_db(np.abs(D)) - hp.ref_level_db
-    
+
     if hp.signal_normalization:
         return _normalize(S)
     return S
@@ -45,7 +45,7 @@ def linearspectrogram(wav):
 def melspectrogram(wav):
     D = _stft(preemphasis(wav, hp.preemphasis, hp.preemphasize))
     S = _amp_to_db(_linear_to_mel(np.abs(D))) - hp.ref_level_db
-    
+
     if hp.signal_normalization:
         return _normalize(S)
     return S
@@ -97,7 +97,7 @@ def _linear_to_mel(spectogram):
 
 def _build_mel_basis():
     assert hp.fmax <= hp.sample_rate // 2
-    return librosa.filters.mel(hp.sample_rate, hp.n_fft, n_mels=hp.num_mels,
+    return librosa.filters.mel(sr=hp.sample_rate, n_fft= hp.n_fft, n_mels=hp.num_mels,
                                fmin=hp.fmin, fmax=hp.fmax)
 
 def _amp_to_db(x):
@@ -114,7 +114,7 @@ def _normalize(S):
                            -hp.max_abs_value, hp.max_abs_value)
         else:
             return np.clip(hp.max_abs_value * ((S - hp.min_level_db) / (-hp.min_level_db)), 0, hp.max_abs_value)
-    
+
     assert S.max() <= 0 and S.min() - hp.min_level_db >= 0
     if hp.symmetric_mels:
         return (2 * hp.max_abs_value) * ((S - hp.min_level_db) / (-hp.min_level_db)) - hp.max_abs_value
@@ -129,7 +129,7 @@ def _denormalize(D):
                     + hp.min_level_db)
         else:
             return ((np.clip(D, 0, hp.max_abs_value) * -hp.min_level_db / hp.max_abs_value) + hp.min_level_db)
-    
+
     if hp.symmetric_mels:
         return (((D + hp.max_abs_value) * -hp.min_level_db / (2 * hp.max_abs_value)) + hp.min_level_db)
     else:

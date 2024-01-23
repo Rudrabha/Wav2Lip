@@ -9,9 +9,6 @@ import torch, face_detection
 import platform
 from io import BytesIO
 import time
-import threading
-
-condition = threading.Condition()
 
 class Args:
 	def __init__(self):
@@ -231,6 +228,17 @@ def get_data_batch(image_path, audio_path, pid):
 		f_img.close()
 		f_mel.close()
 		erlport.erlang.cast(pid, (img, mel))
+	erlport.erlang.cast(pid, erlport.Atom(b"data_sent"))
 	out.release()
 
+def register_handler(pid):
+    def handler(message):
+        message_type = message[0]
+        if message_type != erlport.Atom(b"start_getting_data"):
+           raise f"Unknown message {message_type}" 
+        image_path = message[1]
+        audio_path = message[2]
+        get_data_batch(image_path, audio_path, pid)
 
+    erlport.erlang.set_message_handler(handler)
+    return erlport.Atom(b"ok")

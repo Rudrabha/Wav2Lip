@@ -1,5 +1,5 @@
 librosa==0.7.0
-numpy==1.17.1
+numpy
 opencv-contrib-python>=4.2.0.34
 opencv-python==4.5.4.58
 torch==1.13.1
@@ -7,3 +7,4 @@ torchvision==0.10.0
 tqdm==4.45.0
 numba==0.48
 erlport
+onnx

@@ -1,4 +1,6 @@
-# **Wav2Lip**: *Accurately Lip-syncing Videos In The Wild*
+# **Wav2Lip**: *Accurately Lip-syncing Videos In The Wild* 
+
+### Wav2Lip is hosted for free at [Sync Labs](https://synclabs.so/)
 
 Are you looking to integrate this into a product? We have a turn-key hosted API with new and improved lip-syncing models here: https://synclabs.so/
 

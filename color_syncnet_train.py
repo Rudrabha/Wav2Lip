@@ -70,7 +70,7 @@ class Dataset(object):
         return len(self.all_videos)
 
     def __getitem__(self, idx):
-        print('getitem')
+        
         while 1:
             idx = random.randint(0, len(self.all_videos) - 1)
             vidname = self.all_videos[idx]
@@ -91,7 +91,7 @@ class Dataset(object):
                 y = torch.zeros(1).float()
                 chosen = wrong_img_name
 
-            print('getitem images', img_name, chosen)
+            
             window_fnames = self.get_window(chosen)
             if window_fnames is None:
                 continue
@@ -118,7 +118,6 @@ class Dataset(object):
             try:
                 wavpath = join(vidname, "audio.wav")
                 wav = audio.load_wav(wavpath, hparams.sample_rate)
-                print('wav', wav)
 
                 orig_mel = audio.melspectrogram(wav).T
                 print('finish loading wav mel', orig_mel)
@@ -140,7 +139,6 @@ class Dataset(object):
             x = torch.FloatTensor(x)
             mel = torch.FloatTensor(mel.T).unsqueeze(0)
 
-            print('X, mel, Y', x, mel, y)
             return x, mel, y
 
 logloss = nn.BCELoss()
@@ -162,7 +160,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
         prog_bar = tqdm(enumerate(train_data_loader))
         print('start prog_bar')
         for step, (x, mel, y) in prog_bar:
-            print('start prog_bar step', step)
+            
             model.train()
             optimizer.zero_grad()
 

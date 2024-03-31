@@ -158,7 +158,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     while global_epoch < nepochs:
         running_loss = 0.
         prog_bar = tqdm(enumerate(train_data_loader))
-        print('start prog_bar')
+        
         for step, (x, mel, y) in prog_bar:
             
             model.train()
@@ -191,7 +191,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             prog_bar.set_description('Loss: {}'.format(running_loss / (step + 1)))
 
         global_epoch += 1
-        print('global', global_epoch)
+        
 
 def eval_model(test_data_loader, global_step, device, model, checkpoint_dir):
     eval_steps = 1400

@@ -67,11 +67,13 @@ class Dataset(object):
         return len(self.all_videos)
 
     def __getitem__(self, idx):
+        print('getitem')
         while 1:
             idx = random.randint(0, len(self.all_videos) - 1)
             vidname = self.all_videos[idx]
 
             img_names = list(glob(join(vidname, '*.jpg')))
+            
             if len(img_names) <= 3 * syncnet_T:
                 continue
             img_name = random.choice(img_names)
@@ -86,11 +88,14 @@ class Dataset(object):
                 y = torch.zeros(1).float()
                 chosen = wrong_img_name
 
+            print('getitem images', img_name, chosen)
             window_fnames = self.get_window(chosen)
             if window_fnames is None:
                 continue
 
+            
             window = []
+
             all_read = True
             for fname in window_fnames:
                 img = cv2.imread(fname)
@@ -110,9 +115,12 @@ class Dataset(object):
             try:
                 wavpath = join(vidname, "audio.wav")
                 wav = audio.load_wav(wavpath, hparams.sample_rate)
+                print('wav', wav)
 
                 orig_mel = audio.melspectrogram(wav).T
+                print('finish loading wav mel', orig_mel)
             except Exception as e:
+                print('error', e)
                 continue
 
             mel = self.crop_audio_window(orig_mel.copy(), img_name)
@@ -128,6 +136,7 @@ class Dataset(object):
             x = torch.FloatTensor(x)
             mel = torch.FloatTensor(mel.T).unsqueeze(0)
 
+            print('X, mel, Y', x, mel, y)
             return x, mel, y
 
 logloss = nn.BCELoss()
@@ -142,11 +151,14 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
 
     global global_step, global_epoch
     resumed_step = global_step
+    print('start training data folder', train_data_loader)
     
     while global_epoch < nepochs:
         running_loss = 0.
         prog_bar = tqdm(enumerate(train_data_loader))
+        print('start prog_bar')
         for step, (x, mel, y) in prog_bar:
+            print('start prog_bar step', step)
             model.train()
             optimizer.zero_grad()
 
@@ -177,6 +189,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             prog_bar.set_description('Loss: {}'.format(running_loss / (step + 1)))
 
         global_epoch += 1
+        print('global', global_epoch)
 
 def eval_model(test_data_loader, global_step, device, model, checkpoint_dir):
     eval_steps = 1400
@@ -252,6 +265,7 @@ if __name__ == "__main__":
     # Dataset and Dataloader setup
     train_dataset = Dataset('train')
     test_dataset = Dataset('val')
+    print(train_dataset.all_videos)
 
     train_data_loader = data_utils.DataLoader(
         train_dataset, batch_size=hparams.syncnet_batch_size, shuffle=True,

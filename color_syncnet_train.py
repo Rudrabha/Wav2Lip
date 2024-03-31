@@ -16,6 +16,9 @@ from glob import glob
 import os, random, cv2, argparse
 from hparams import hparams, get_image_list
 
+# import module 
+import traceback 
+
 parser = argparse.ArgumentParser(description='Code to train the expert lip-sync discriminator')
 
 parser.add_argument("--data_root", help="Root folder of the preprocessed LRS2 dataset", required=True)
@@ -121,6 +124,7 @@ class Dataset(object):
                 print('finish loading wav mel', orig_mel)
             except Exception as e:
                 print('error', e)
+                traceback.print_exc() 
                 continue
 
             mel = self.crop_audio_window(orig_mel.copy(), img_name)

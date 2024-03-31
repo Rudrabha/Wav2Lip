@@ -7,7 +7,7 @@ class Conv2d(nn.Module):
         super().__init__(*args, **kwargs)
         self.conv_block = nn.Sequential(
                             nn.Conv2d(cin, cout, kernel_size, stride, padding),
-                            #nn.BatchNorm2d(cout)
+                            nn.BatchNorm2d(cout) # Eddy, looks like if the dataset is too small, it will cause error, see this link https://discuss.pytorch.org/t/error-expected-more-than-1-value-per-channel-when-training/26274
                             )
         self.act = nn.ReLU()
         self.residual = residual

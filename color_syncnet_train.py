@@ -120,7 +120,7 @@ class Dataset(object):
                 wav = audio.load_wav(wavpath, hparams.sample_rate)
 
                 orig_mel = audio.melspectrogram(wav).T
-                print('finish loading wav mel', orig_mel)
+                
             except Exception as e:
                 print('error', e)
                 traceback.print_exc() 

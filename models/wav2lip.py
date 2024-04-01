@@ -10,8 +10,10 @@ class Wav2Lip(nn.Module):
         super(Wav2Lip, self).__init__()
 
         self.face_encoder_blocks = nn.ModuleList([
-            # add by eddy to support 256x256 input
-            nn.Sequential(Conv2d(6, 6, kernel_size=3, stride=2, padding=1)),
+            # add by eddy to support 192x192 input
+            nn.Sequential(Conv2d(6, 6, kernel_size=3, stride=1, padding=1),
+            Conv2d(6, 6, kernel_size=4, stride=2, padding=1)), # 192,192
+            
             # end add by eddy
 
             nn.Sequential(Conv2d(6, 16, kernel_size=7, stride=1, padding=3)), # 96,96
@@ -56,7 +58,8 @@ class Wav2Lip(nn.Module):
             Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True),
 
             Conv2d(256, 512, kernel_size=3, stride=1, padding=0),
-            Conv2d(512, 512, kernel_size=1, stride=1, padding=0),)
+            Conv2d(512, 512, kernel_size=1, stride=1, padding=0),
+            )
 
         self.face_decoder_blocks = nn.ModuleList([
             nn.Sequential(Conv2d(512, 512, kernel_size=1, stride=1, padding=0),),
@@ -82,12 +85,16 @@ class Wav2Lip(nn.Module):
 
             nn.Sequential(Conv2dTranspose(160, 64, kernel_size=3, stride=2, padding=1, output_padding=1),
             Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
-            Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),),
+            Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),), # 96,96
 
-            # add by eddy to support 256x256 input
-            nn.Sequential(Conv2dTranspose(64, 3, kernel_size=3, stride=2, padding=1, output_padding=1))
+            # add by eddy to support 192x192 input
+            nn.Sequential(
+                Conv2dTranspose(80, 32, kernel_size=3, stride=2, padding=1, output_padding=1),
+                Conv2d(32, 32, kernel_size=3, stride=1, padding=1, residual=True),
+                Conv2d(32, 32, kernel_size=3, stride=1, padding=1, residual=True),
+            )
             # end add by eddy
-            ]) # 96,96
+            ]) 
 
         self.output_block = nn.Sequential(Conv2d(80, 32, kernel_size=3, stride=1, padding=1),
             nn.Conv2d(32, 3, kernel_size=1, stride=1, padding=0),
@@ -107,20 +114,26 @@ class Wav2Lip(nn.Module):
         feats = []
         x = face_sequences
         for f in self.face_encoder_blocks:
+            #print('The face before encoder', x.shape)
             x = f(x)
+            
             feats.append(x)
+            # print()
+            # print('The face after encoder', feats[-1].shape, len(feats))
 
         x = audio_embedding
         for f in self.face_decoder_blocks:
+            #print('The x shape', x.shape)
             x = f(x)
+            print('The x shape and size after decoder', x.shape, x.size(), feats[-1].shape)
+
             try:
                 x = torch.cat((x, feats[-1]), dim=1)
             except Exception as e:
-                print(x.size())
-                print(feats[-1].size())
                 raise e
             
             feats.pop()
+            #print('The new length', len(feats))
 
         x = self.output_block(x)
 

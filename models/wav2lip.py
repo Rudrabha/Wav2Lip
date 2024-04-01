@@ -11,7 +11,7 @@ class Wav2Lip(nn.Module):
 
         self.face_encoder_blocks = nn.ModuleList([
             # add by eddy to support 256x256 input
-            nn.Sequential(Conv2d(3, 6, kernel_size=3, stride=2, padding=1)),
+            nn.Sequential(Conv2d(6, 6, kernel_size=3, stride=2, padding=1)),
             # end add by eddy
 
             nn.Sequential(Conv2d(6, 16, kernel_size=7, stride=1, padding=3)), # 96,96

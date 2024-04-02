@@ -37,7 +37,7 @@ template = 'ffmpeg -loglevel panic -y -i {} -strict -2 {}'
 
 def process_video_file(vfile, args, gpu_id):
 	video_stream = cv2.VideoCapture(vfile)
-	
+	print('Processing file', vfile)
 	frames = []
 	while 1:
 		still_reading, frame = video_stream.read()

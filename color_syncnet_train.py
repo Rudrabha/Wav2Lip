@@ -188,7 +188,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
                 with torch.no_grad():
                     eval_model(test_data_loader, global_step, device, model, checkpoint_dir)
 
-            prog_bar.set_description('Loss: {}'.format(running_loss / (step + 1)))
+            prog_bar.set_description('Epoch: {0}, Loss: {1}'.format(global_epoch, running_loss / (step + 1)))
 
         global_epoch += 1
         

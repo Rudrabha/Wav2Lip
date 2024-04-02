@@ -89,7 +89,7 @@ class Wav2Lip(nn.Module):
 
             # add by eddy to support 192x192 input
             nn.Sequential(
-                Conv2dTranspose(80, 32, kernel_size=3, stride=2, padding=1, output_padding=1),
+                Conv2dTranspose(48, 32, kernel_size=3, stride=2, padding=1, output_padding=1),
                 Conv2d(32, 32, kernel_size=3, stride=1, padding=1, residual=True),
                 Conv2d(32, 32, kernel_size=3, stride=1, padding=1, residual=True),
             )
@@ -115,23 +115,19 @@ class Wav2Lip(nn.Module):
         x = face_sequences
         for f in self.face_encoder_blocks:
             #print('The face before encoder', x.shape)
-            #print('encoder shape', f)
             x = f(x)
-            
             feats.append(x)
-            # print()
             # print('The face after encoder', feats[-1].shape, len(feats))
 
-        print('encoder, decoder length',len(self.face_encoder_blocks), len(self.face_decoder_blocks))
+        #print('encoder, decoder length',len(self.face_encoder_blocks), len(self.face_decoder_blocks))
         x = audio_embedding
         for f in self.face_decoder_blocks:
             #print('The x shape', x.shape)
             x = f(x)
-            print('The audio decoded shape and encoder shape', x.shape, feats[-1].shape)
+            #print('The audio decoded shape and encoder shape', x.shape, feats[-1].shape)
 
             try:
                 x = torch.cat((x, feats[-1]), dim=1)
-                print('good')
             except Exception as e:
                 raise e
             

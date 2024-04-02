@@ -73,7 +73,7 @@ hparams = HParams(
 	fmax=7600,  # To be increased/reduced depending on data.
 
 	###################### Our training parameters #################################
-	img_size=96,
+	img_size=192,
 	fps=25,
 	
 	batch_size=16,

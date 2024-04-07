@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Directory containing the original MP4 files
-SOURCE_DIR="/path/to/source"
+SOURCE_DIR="/content/drive/MyDrive/cantonese_datasets/Wav2Lip/Data/dataroot_20240406"
 
 # Function to split video into two halves if longer than one minute
 split_video_if_longer_than_one_minute() {

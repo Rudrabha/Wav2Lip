@@ -1,44 +1,63 @@
 #!/bin/bash
 
-# Directory containing the original MP4 files
-SOURCE_DIR="/content/drive/MyDrive/cantonese_datasets/Wav2Lip/Data/dataroot_20240406"
+# Function to split video using ffmpeg
+split_video() {
+    local input_file=$1
+    local split_duration=$2
+    local output_prefix=$3
 
-# Function to split video into two halves if longer than one minute
-split_video_if_longer_than_one_minute() {
-    local input_file="$1"
-    local output_dir="$2"
-    local file_index="$3"
-    
-    # Check if the video is longer than 60 seconds (1 minute)
-    duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$input_file")
-    
-    if (( $(echo "$duration > 60" | bc -l) )); then
-        # Calculate half the duration
-        half_duration=$(echo "$duration / 2" | bc -l)
+    # Get duration of video in seconds
+    local duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$input_file")
+    local duration=${duration%.*} # Remove decimal part
 
-        # Create subfolder for split videos if it doesn't exist
-        mkdir -p "$output_dir"
-
-        # Split the video into two halves using FFmpeg
-        ffmpeg -i "$input_file" -t "$half_duration" -c copy "${output_dir}/0000${file_index}.mp4"
-        let file_index=file_index+1
-        ffmpeg -i "$input_file" -ss "$half_duration" -c copy "${output_dir}/0000${file_index}.mp4"
+    # Calculate number of parts we need to split into based on duration and split_duration
+    if (( duration > split_duration )); then
+        
+        # Split the video into segments of split_duration each
+        ffmpeg -i "$input_file" -c copy -map 0 -segment_time "$split_duration" -f segment -reset_timestamps 1 "${output_prefix}_%04d.${input_file##*.}"
+        echo "Video $input_file has been split into multiple parts."
+    else
+        echo "Video $input_file does not require splitting."
     fi
 }
 
-# Initialize file index counter
-file_index=1
+# Check if at least two arguments are provided (split_duration and base_dir)
+if [[ $# -lt 2 ]]; then
+    echo "Usage: $0  "
+    exit 1
+fi
 
-# Export function so it can be used by find command with exec option
-export -f split_video_if_longer_than_one_minute
+split_duration="$1"
+base_dir="$2"
 
-# Iterate over all MP4 files in the directory and its subdirectories,
-# splitting them if they are longer than one minute.
-find "$SOURCE_DIR" -type f -name "*.mp4" | while read filename; do 
-    split_video_if_longer_than_one_minute "$filename" "$(dirname "$filename")/split" $file_index
-    
-    # Increment index only if a file was actually split.
-    if [ $? == 0 ]; then 
-        let file_index=file_index+2 
-    fi 
+# Ensure provided base_dir exists and is a directory.
+if [[ ! -d "$base_dir" ]]; then
+  echo "The specified base directory does not exist or is not a directory."
+  exit 2
+fi
+
+# Define an array of video file extensions.
+video_extensions=("mp4" "mkv" "avi" "mov") # Add any other video formats you need.
+
+# Build find command expression.
+find_expression=()
+for ext in "${video_extensions[@]}"; do
+  find_expression+=(-iname "*.$ext" -o)
 done
+# Remove trailing -o (logical OR).
+last_index=$(( ${#find_expression[@]} - 1 ))
+unset 'find_expression[last_index]'
+
+# Find all video files in base_dir and its subdirectories.
+while IFS= read -r file; do
+    
+    # Generate output prefix by removing file extension from input filename.
+    output_prefix="${file%.*}"
+
+    echo 'start processing' $file $output_prefix
+    # Call function to split video.
+    split_video "$file" "$split_duration" "$output_prefix"
+
+done < <(find "$base_dir" -type f \( "${find_expression[@]}" \))
+
+echo "All videos processed."

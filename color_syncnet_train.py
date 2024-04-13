@@ -213,6 +213,8 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir):
             loss = cosine_loss(a, v, y)
             losses.append(loss.item())
 
+            print('Step: {0}, Cosine Loss: {1}'.format(step, loss))
+
             if step > eval_steps: break
 
         averaged_loss = sum(losses) / len(losses)

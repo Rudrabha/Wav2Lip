@@ -253,7 +253,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
                     if average_sync_loss < .75:
                         hparams.set_hparam('syncnet_wt', 0.01) # without image GAN a lesser weight is sufficient
 
-            prog_bar.set_description('L1: {}, Sync Loss: {}'.format(running_l1_loss / (step + 1),
+            prog_bar.set_description('Training Loss, L1: {}, Sync Loss: {}'.format(running_l1_loss / (step + 1),
                                                                     running_sync_loss / (step + 1)))
 
         global_epoch += 1
@@ -283,13 +283,13 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir):
             sync_losses.append(sync_loss.item())
             recon_losses.append(l1loss.item())
 
+            averaged_sync_loss = sum(sync_losses) / len(sync_losses)
+            averaged_recon_loss = sum(recon_losses) / len(recon_losses)
+
+            print('Eval Loss, L1: {}, Sync loss: {}'.format(averaged_recon_loss, averaged_sync_loss))
+
             if step > eval_steps: 
-                averaged_sync_loss = sum(sync_losses) / len(sync_losses)
-                averaged_recon_loss = sum(recon_losses) / len(recon_losses)
-
-                print('L1: {}, Sync loss: {}'.format(averaged_recon_loss, averaged_sync_loss))
-
-                return averaged_sync_loss
+              return averaged_sync_loss
 
 def save_checkpoint(model, optimizer, step, checkpoint_dir, epoch):
 

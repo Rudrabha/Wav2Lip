@@ -76,7 +76,7 @@ hparams = HParams(
 	img_size=192,
 	fps=25,
 	
-	batch_size=16,
+	batch_size=24,
 	initial_learning_rate=1e-4,
 	nepochs=200000000000000000,  ### ctrl + c, stop whenever eval loss is consistently greater than train loss for ~10 epochs
 	num_workers=16,
@@ -84,7 +84,8 @@ hparams = HParams(
 	eval_interval=1000,
     save_optimizer_state=True,
 
-    syncnet_wt=0.0, # is initially zero, will be set automatically to 0.03 later. Leads to faster convergence. 
+    #syncnet_wt=0.0, # is initially zero, will be set automatically to 0.03 later. Leads to faster convergence. 
+		syncnet_wt=0.03, # is initially set by eddy, will be set automatically to 0.01 later.  
 	syncnet_batch_size=64,
 	syncnet_lr=1e-5,
 	syncnet_eval_interval=1000,

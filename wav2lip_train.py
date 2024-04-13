@@ -246,7 +246,15 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
                 save_checkpoint(
                     model, optimizer, global_step, checkpoint_dir, global_epoch)
 
-            if global_step == 1 or global_step % hparams.eval_interval == 0:
+            if global_step == 1:
+                with torch.no_grad():
+                    average_sync_loss = eval_model(test_data_loader, global_step, device, model, checkpoint_dir, 10)
+
+                    if average_sync_loss < .75:
+                        hparams.set_hparam('syncnet_wt', 0.01) # without image GAN a lesser weight is sufficient
+
+            else:
+              if global_step % hparams.eval_interval == 0:
                 with torch.no_grad():
                     average_sync_loss = eval_model(test_data_loader, global_step, device, model, checkpoint_dir)
 
@@ -259,8 +267,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
         global_epoch += 1
         
 
-def eval_model(test_data_loader, global_step, device, model, checkpoint_dir):
-    eval_steps = 700
+def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, eval_steps = 700):
     print('Evaluating for {} steps'.format(eval_steps))
     sync_losses, recon_losses = [], []
     step = 0

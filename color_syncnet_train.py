@@ -156,7 +156,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     print('start training data folder', train_data_loader)
 
     # Added by eddy
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.05)
     # end
     
     while global_epoch < nepochs:

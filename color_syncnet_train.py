@@ -154,6 +154,10 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     global global_step, global_epoch
     resumed_step = global_step
     print('start training data folder', train_data_loader)
+
+    # Added by eddy
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
+    # end
     
     while global_epoch < nepochs:
         running_loss = 0.
@@ -187,11 +191,25 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             if global_step % hparams.syncnet_eval_interval == 0:
                 with torch.no_grad():
                     eval_model(test_data_loader, global_step, device, model, checkpoint_dir)
+                
+                # Added by eddy
+                scheduler.step()
+                # Example usage within a training loop or any function
+                current_lr = get_current_lr(optimizer)
+                print('Doing learning decay now, the new rate is: {0}'.format(current_lr))
+                # end
 
             prog_bar.set_description('Epoch: {0}, Loss: {1}'.format(global_epoch, running_loss / (step + 1)))
 
         global_epoch += 1
         
+
+# Added by eddy
+def get_current_lr(optimizer):
+    # Assuming there is only one parameter group
+    for param_group in optimizer.param_groups:
+        return param_group['lr']
+
 
 def eval_model(test_data_loader, global_step, device, model, checkpoint_dir):
     eval_steps = 1400

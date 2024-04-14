@@ -10,6 +10,7 @@ from torch import optim
 import torch.backends.cudnn as cudnn
 from torch.utils import data as data_utils
 import numpy as np
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from glob import glob
 
@@ -154,13 +155,13 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     global global_step, global_epoch
     resumed_step = global_step
     print('start training data folder', train_data_loader)
-    step_size = 500
+    patience = 20
 
     current_lr = get_current_lr(optimizer)
     print('Doing learning decay now, the new rate is: {0}'.format(current_lr))
 
     # Added by eddy
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=0.9)
+    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.9, patience=patience, verbose=True)
     # end
     
     while global_epoch < nepochs:
@@ -200,11 +201,16 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
 
         global_epoch += 1
         # Added by eddy
-        scheduler.step()
-        if global_epoch % step_size == 0:
+        average_train_loss = running_loss / len(train_data_loader)  # Average loss over the epoch
+
+        # Scheduler step with average training loss
+        scheduler.step(average_train_loss)
+        
+
+        if global_epoch % patience == 0:
           # Example usage within a training loop or any function
           current_lr = get_current_lr(optimizer)
-          print('Doing learning decay now, the new rate is: {0}'.format(current_lr))
+          print('Doing learning decay now, the avg training loss for the last {0} is {1}, the new rate is: {2}'.format(patience, average_train_loss, current_lr))
           # end
         
 

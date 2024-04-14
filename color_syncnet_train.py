@@ -155,7 +155,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     global global_step, global_epoch
     resumed_step = global_step
     print('start training data folder', train_data_loader)
-    patience = 20
+    patience = 100
 
     current_lr = get_current_lr(optimizer)
     print('Doing learning decay now, the new rate is: {0}'.format(current_lr))
@@ -164,6 +164,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.9, patience=patience, verbose=True)
     # end
     
+
     while global_epoch < nepochs:
         running_loss = 0.
         prog_bar = tqdm(enumerate(train_data_loader))
@@ -200,6 +201,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             prog_bar.set_description('Epoch: {0}, Loss: {1}'.format(global_epoch, running_loss / (step + 1)))
 
         global_epoch += 1
+
         # Added by eddy
         average_train_loss = running_loss / len(train_data_loader)  # Average loss over the epoch
 

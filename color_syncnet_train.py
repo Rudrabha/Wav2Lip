@@ -191,17 +191,16 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             if global_step % hparams.syncnet_eval_interval == 0:
                 with torch.no_grad():
                     eval_model(test_data_loader, global_step, device, model, checkpoint_dir)
-                
-                # Added by eddy
-                scheduler.step()
-                # Example usage within a training loop or any function
-                current_lr = get_current_lr(optimizer)
-                print('Doing learning decay now, the new rate is: {0}'.format(current_lr))
-                # end
 
             prog_bar.set_description('Epoch: {0}, Loss: {1}'.format(global_epoch, running_loss / (step + 1)))
 
         global_epoch += 1
+        # Added by eddy
+        scheduler.step()
+        # Example usage within a training loop or any function
+        current_lr = get_current_lr(optimizer)
+        print('Doing learning decay now, the new rate is: {0}'.format(current_lr))
+        # end
         
 
 # Added by eddy

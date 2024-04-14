@@ -156,6 +156,9 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     print('start training data folder', train_data_loader)
     step_size = 500
 
+    current_lr = get_current_lr(optimizer)
+    print('Doing learning decay now, the new rate is: {0}'.format(current_lr))
+
     # Added by eddy
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=0.9)
     # end

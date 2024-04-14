@@ -154,9 +154,10 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     global global_step, global_epoch
     resumed_step = global_step
     print('start training data folder', train_data_loader)
+    step_size = 500
 
     # Added by eddy
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.05)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=0.9)
     # end
     
     while global_epoch < nepochs:
@@ -197,10 +198,11 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
         global_epoch += 1
         # Added by eddy
         scheduler.step()
-        # Example usage within a training loop or any function
-        current_lr = get_current_lr(optimizer)
-        print('Doing learning decay now, the new rate is: {0}'.format(current_lr))
-        # end
+        if global_epoch % step_size == 0:
+          # Example usage within a training loop or any function
+          current_lr = get_current_lr(optimizer)
+          print('Doing learning decay now, the new rate is: {0}'.format(current_lr))
+          # end
         
 
 # Added by eddy

@@ -158,7 +158,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     patience = 500
 
     current_lr = get_current_lr(optimizer)
-    print('Doing learning decay now, the new rate is: {0}'.format(current_lr))
+    print('The learning rate is: {0}'.format(current_lr))
 
     # Added by eddy
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.9, patience=patience, verbose=True)
@@ -195,9 +195,9 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
 
             if global_step % hparams.syncnet_eval_interval == 0:
                 with torch.no_grad():
-                    eval_model(test_data_loader, global_step, device, model, checkpoint_dir)
+                    eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler)
 
-            prog_bar.set_description('Epoch: {0}, Loss: {1}, current learning rate: '.format(global_epoch, running_loss / (step + 1), current_lr))
+            prog_bar.set_description('Epoch: {0}, Loss: {1}, current learning rate: {2}'.format(global_epoch, running_loss / (step + 1), current_lr))
 
         global_epoch += 1
         

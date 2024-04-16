@@ -155,7 +155,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     global global_step, global_epoch
     resumed_step = global_step
     print('start training data folder', train_data_loader)
-    patience = 100
+    patience = 500
 
     current_lr = get_current_lr(optimizer)
     print('Doing learning decay now, the new rate is: {0}'.format(current_lr))
@@ -163,12 +163,11 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     # Added by eddy
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.9, patience=patience, verbose=True)
     # end
-    
 
     while global_epoch < nepochs:
         running_loss = 0.
         prog_bar = tqdm(enumerate(train_data_loader))
-        
+        current_lr = get_current_lr(optimizer)
         for step, (x, mel, y) in prog_bar:
             
             model.train()
@@ -198,22 +197,9 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
                 with torch.no_grad():
                     eval_model(test_data_loader, global_step, device, model, checkpoint_dir)
 
-            prog_bar.set_description('Epoch: {0}, Loss: {1}'.format(global_epoch, running_loss / (step + 1)))
+            prog_bar.set_description('Epoch: {0}, Loss: {1}, current learning rate: '.format(global_epoch, running_loss / (step + 1), current_lr))
 
         global_epoch += 1
-
-        # Added by eddy
-        average_train_loss = running_loss / len(train_data_loader)  # Average loss over the epoch
-
-        # Scheduler step with average training loss
-        scheduler.step(average_train_loss)
-        
-
-        if global_epoch % patience == 0:
-          # Example usage within a training loop or any function
-          current_lr = get_current_lr(optimizer)
-          print('Doing learning decay now, the avg training loss for the last {0} is {1}, the new rate is: {2}'.format(patience, average_train_loss, current_lr))
-          # end
         
 
 # Added by eddy
@@ -223,9 +209,10 @@ def get_current_lr(optimizer):
         return param_group['lr']
 
 
-def eval_model(test_data_loader, global_step, device, model, checkpoint_dir):
-    eval_steps = 1400
-    print('Evaluating for {} steps'.format(eval_steps))
+def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler):
+    #eval_steps = 1400
+    eval_steps = 100
+    print('Evaluating for {0} steps of total steps {1}'.format(eval_steps, len(enumerate(test_data_loader))))
     losses = []
     while 1:
         for step, (x, mel, y) in enumerate(test_data_loader):
@@ -248,7 +235,9 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir):
             if step > eval_steps: break
 
         averaged_loss = sum(losses) / len(losses)
-        print(averaged_loss)
+        print('The avg eval loss is: {0}'.format(averaged_loss))
+        # Scheduler step with average training loss
+        scheduler.step(averaged_loss)
 
         return
 

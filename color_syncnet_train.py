@@ -212,7 +212,7 @@ def get_current_lr(optimizer):
 def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler):
     #eval_steps = 1400
     eval_steps = 100
-    print('Evaluating for {0} steps of total steps {1}'.format(eval_steps, len(enumerate(test_data_loader))))
+    print('Evaluating for {0} steps of total steps {1}'.format(eval_steps, len(test_data_loader)))
     losses = []
     while 1:
         for step, (x, mel, y) in enumerate(test_data_loader):

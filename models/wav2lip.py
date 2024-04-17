@@ -89,14 +89,14 @@ class Wav2Lip(nn.Module):
 
             # add by eddy to support 192x192 input
             nn.Sequential(
-                Conv2dTranspose(80, 32, kernel_size=3, stride=2, padding=1, output_padding=1),
-                Conv2d(32, 32, kernel_size=3, stride=1, padding=1, residual=True),
-                Conv2d(32, 32, kernel_size=3, stride=1, padding=1, residual=True),
+                Conv2dTranspose(80, 64, kernel_size=3, stride=2, padding=1, output_padding=1),
+                Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
+                Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
             )
             # end add by eddy
             ]) 
 
-        self.output_block = nn.Sequential(Conv2d(48, 32, kernel_size=3, stride=1, padding=1),
+        self.output_block = nn.Sequential(Conv2d(80, 32, kernel_size=3, stride=1, padding=1),
             nn.Conv2d(32, 3, kernel_size=1, stride=1, padding=0),
             nn.Sigmoid()) 
 

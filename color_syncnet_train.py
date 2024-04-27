@@ -155,7 +155,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     global global_step, global_epoch
     resumed_step = global_step
     print('start training data folder', train_data_loader)
-    patience = 10
+    patience = 20
 
     current_lr = get_current_lr(optimizer)
     print('The learning rate is: {0}'.format(current_lr))
@@ -232,7 +232,7 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, sch
             loss = cosine_loss(a, v, y)
             losses.append(loss.item())
 
-            print('Step: {0}, Cosine Loss: {1}'.format(step, loss))
+            #print('Step: {0}, Cosine Loss: {1}'.format(step, loss))
 
             if step > eval_steps: break
 

@@ -155,7 +155,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     global global_step, global_epoch
     resumed_step = global_step
     print('start training data folder', train_data_loader)
-    patience = 20
+    patience = 100
 
     current_lr = get_current_lr(optimizer)
     print('The learning rate is: {0}'.format(current_lr))
@@ -212,6 +212,7 @@ def get_current_lr(optimizer):
 def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler):
     #eval_steps = 1400
     eval_steps = 100
+    eval_loop = 50
     current_step = 1
     print()
     print('Evaluating for {0} steps of total steps {1}'.format(eval_steps, len(test_data_loader)))
@@ -241,7 +242,7 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, sch
         # Scheduler step with average training loss
         scheduler.step(averaged_loss)
         current_step += 1
-        if current_step > eval_steps: 
+        if current_step > eval_loop: 
             return
 
 def save_checkpoint(model, optimizer, step, checkpoint_dir, epoch):

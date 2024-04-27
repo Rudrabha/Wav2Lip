@@ -212,6 +212,7 @@ def get_current_lr(optimizer):
 def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler):
     #eval_steps = 1400
     eval_steps = 100
+    current_step = 1
     print()
     print('Evaluating for {0} steps of total steps {1}'.format(eval_steps, len(test_data_loader)))
     losses = []
@@ -239,8 +240,9 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, sch
         print('The avg eval loss is: {0}'.format(averaged_loss))
         # Scheduler step with average training loss
         scheduler.step(averaged_loss)
-
-        return
+        current_step += 1
+        if current_step > eval_steps: 
+            return
 
 def save_checkpoint(model, optimizer, step, checkpoint_dir, epoch):
 

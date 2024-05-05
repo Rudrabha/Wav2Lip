@@ -41,6 +41,8 @@ syncnet_mel_step_size = 16
 class Dataset(object):
     def __init__(self, split):
         self.all_videos = get_image_list(args.data_root, split)
+        self.image_cache = {}  # Initialize the cache
+        self.audio_cache = {}
 
     def get_frame_id(self, frame):
         return int(basename(frame).split('.')[0])
@@ -102,15 +104,20 @@ class Dataset(object):
 
             all_read = True
             for fname in window_fnames:
-                img = cv2.imread(fname)
-                if img is None:
-                    all_read = False
-                    break
-                try:
-                    img = cv2.resize(img, (hparams.img_size, hparams.img_size))
-                except Exception as e:
-                    all_read = False
-                    break
+                print('The image name ', fname)
+                if fname in self.image_cache:
+                    img = self.image_cache[fname]
+                else:
+                    img = cv2.imread(fname)
+                    if img is None:
+                        all_read = False
+                        break
+                    try:
+                        img = cv2.resize(img, (hparams.img_size, hparams.img_size))
+                        self.image_cache[fname] = img  # Cache the resized image
+                    except Exception as e:
+                        all_read = False
+                        break
 
                 window.append(img)
 
@@ -118,6 +125,13 @@ class Dataset(object):
 
             try:
                 wavpath = join(vidname, "audio.wav")
+                print('The audio name ', wavpath)
+
+                if wavpath in self.audio_cache:
+                    wav = self.audio_cache[wavpath]
+                else:
+                    wav = audio.load_wav(wavpath, hparams.sample_rate)
+
                 wav = audio.load_wav(wavpath, hparams.sample_rate)
 
                 orig_mel = audio.melspectrogram(wav).T

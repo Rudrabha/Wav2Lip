@@ -39,10 +39,25 @@ syncnet_T = 5
 syncnet_mel_step_size = 16
 
 class Dataset(object):
-    def __init__(self, split):
+    def __init__(self, split, use_image_cache):
         self.all_videos = get_image_list(args.data_root, split)
         self.image_cache = {}  # Initialize the cache
         self.audio_cache = {}
+        self.orig_mel_cache = {}
+        if use_image_cache:
+          for vidname in self.all_videos:
+              img_names = list(glob(join(vidname, '*.jpg')))
+              for fname in img_names:
+                  img = cv2.imread(fname)
+                  if img is None:
+                    break
+                  try:
+                    img = cv2.resize(img, (hparams.img_size, hparams.img_size))
+                    self.image_cache[fname] = img  # Cache the resized image
+                  except Exception as e:
+                    break
+        
+        
 
     def get_frame_id(self, frame):
         return int(basename(frame).split('.')[0])
@@ -104,9 +119,10 @@ class Dataset(object):
 
             all_read = True
             for fname in window_fnames:
-                print('The image name ', fname)
+                #print('The image name ', fname)
                 if fname in self.image_cache:
                     img = self.image_cache[fname]
+                    #print('The image cache hit ', fname)
                 else:
                     img = cv2.imread(fname)
                     if img is None:
@@ -125,16 +141,15 @@ class Dataset(object):
 
             try:
                 wavpath = join(vidname, "audio.wav")
-                print('The audio name ', wavpath)
 
                 if wavpath in self.audio_cache:
                     wav = self.audio_cache[wavpath]
+                    orig_mel = self.orig_mel_cache[wavpath]
+                    #print('The audio cache hit ', fname)
                 else:
                     wav = audio.load_wav(wavpath, hparams.sample_rate)
-
-                wav = audio.load_wav(wavpath, hparams.sample_rate)
-
-                orig_mel = audio.melspectrogram(wav).T
+                    orig_mel = audio.melspectrogram(wav).T
+                    self.orig_mel_cache[wavpath] = orig_mel
                 
             except Exception as e:
                 print('error', e)
@@ -304,8 +319,8 @@ if __name__ == "__main__":
     if not os.path.exists(checkpoint_dir): os.mkdir(checkpoint_dir)
 
     # Dataset and Dataloader setup
-    train_dataset = Dataset('train')
-    test_dataset = Dataset('val')
+    train_dataset = Dataset('train', True)
+    test_dataset = Dataset('val', True)
     print(train_dataset.all_videos)
 
     train_data_loader = data_utils.DataLoader(

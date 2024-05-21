@@ -148,7 +148,6 @@ class Dataset(object):
                 wavpath = join(vidname, "audio.wav")
 
                 if wavpath in self.audio_cache:
-                    wav = self.audio_cache[wavpath]
                     orig_mel = self.orig_mel_cache[wavpath]
                     #print('The audio cache hit ', fname)
                 else:
@@ -245,8 +244,8 @@ def get_current_lr(optimizer):
 
 def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler):
     #eval_steps = 1400
-    eval_steps = 100
-    eval_loop = 50
+    eval_steps = 20
+    eval_loop = 20
     current_step = 1
     print()
     print('Evaluating for {0} steps of total steps {1}'.format(eval_steps, len(test_data_loader)))

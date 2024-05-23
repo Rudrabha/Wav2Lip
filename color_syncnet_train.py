@@ -323,8 +323,8 @@ if __name__ == "__main__":
     if not os.path.exists(checkpoint_dir): os.mkdir(checkpoint_dir)
 
     # Dataset and Dataloader setup
-    train_dataset = Dataset('train', True)
-    test_dataset = Dataset('val', True)
+    train_dataset = Dataset('train', False)
+    test_dataset = Dataset('val', False)
     print(train_dataset.all_videos)
 
     train_data_loader = data_utils.DataLoader(

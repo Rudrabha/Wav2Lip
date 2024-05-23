@@ -11,26 +11,32 @@ class Wav2Lip(nn.Module):
 
         self.face_encoder_blocks = nn.ModuleList([
             # add by eddy to support 192x192 input
-            nn.Sequential(Conv2d(6, 16, kernel_size=3, stride=1, padding=1),
-                          Conv2d(16, 32, kernel_size=3, stride=1, padding=1),
+            nn.Sequential(Conv2d(6, 32, kernel_size=3, stride=1, padding=1),
+                          Conv2d(32, 32, kernel_size=3, stride=1, padding=1),
+                          Conv2d(32, 32, kernel_size=3, stride=1, padding=1),
                           ), # 192,192
             
             # end add by eddy
 
-            nn.Sequential(Conv2d(32, 32, kernel_size=4, stride=2, padding=1),
-              Conv2d(32, 32, kernel_size=3, stride=1, padding=1, residual=True),
-              Conv2d(32, 32, kernel_size=3, stride=1, padding=1, residual=True)), # 96,96
+            nn.Sequential(Conv2d(32, 64, kernel_size=4, stride=2, padding=1),
+              Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
+              Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
+              Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True)
+              ), # 96,96
 
-            nn.Sequential(Conv2d(32, 32, kernel_size=3, stride=2, padding=1), # 48,48
-            Conv2d(32, 32, kernel_size=3, stride=1, padding=1, residual=True),
-            Conv2d(32, 32, kernel_size=3, stride=1, padding=1, residual=True)),
+            nn.Sequential(Conv2d(64, 64, kernel_size=3, stride=2, padding=1), # 48,48
+            Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
+            Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
+            Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True)
+            ),
 
-            nn.Sequential(Conv2d(32, 64, kernel_size=3, stride=2, padding=1),    # 24,24
+            nn.Sequential(Conv2d(64, 64, kernel_size=3, stride=2, padding=1),    # 24,24
             Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True)),
 
             nn.Sequential(Conv2d(64, 128, kernel_size=3, stride=2, padding=1),   # 12,12
+            Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True)),
 
@@ -86,13 +92,13 @@ class Wav2Lip(nn.Module):
             Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True),), # 48, 48
 
-            nn.Sequential(Conv2dTranspose(160, 64, kernel_size=3, stride=2, padding=1, output_padding=1),
+            nn.Sequential(Conv2dTranspose(192, 64, kernel_size=3, stride=2, padding=1, output_padding=1),
             Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),), # 96,96
 
             # add by eddy to support 192x192 input
             nn.Sequential(
-                Conv2dTranspose(96, 64, kernel_size=3, stride=2, padding=1, output_padding=1),
+                Conv2dTranspose(128, 64, kernel_size=3, stride=2, padding=1, output_padding=1),
                 Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
                 Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
             )
@@ -121,9 +127,11 @@ class Wav2Lip(nn.Module):
             feats.append(x)
 
         x = audio_embedding
+        index = 1
         for f in self.face_decoder_blocks:
-            #print('The x shape', x.shape)
+            #print('The index is', index)
             x = f(x)
+            index += 1
 
             try:
                 x = torch.cat((x, feats[-1]), dim=1)

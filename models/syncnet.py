@@ -13,6 +13,8 @@ class SyncNet_color(nn.Module):
             Conv2d(15, 32, kernel_size=(7, 7), stride=2, padding=3), #192x192
             # End added
             Conv2d(32, 32, kernel_size=(7, 7), stride=1, padding=3), #96x96
+            Conv2d(32, 32, kernel_size=(7, 7), stride=1, padding=3, residual=True),
+            Conv2d(32, 32, kernel_size=(7, 7), stride=1, padding=3, residual=True),
 
             Conv2d(32, 64, kernel_size=5, stride=(1, 2), padding=1), #94x47
             Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True), #94x47

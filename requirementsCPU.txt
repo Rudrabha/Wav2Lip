@@ -7,3 +7,7 @@ torch
 torchvision
 tqdm
 numba
+mediapipe
+https://raw.githubusercontent.com/AwaleSajil/ghc/master/ghc-1.0-py3-none-any.whl
+git+https://github.com/elliottzheng/batch-face.git@master
+ffmpeg-python

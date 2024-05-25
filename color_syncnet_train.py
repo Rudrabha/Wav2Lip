@@ -188,7 +188,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     global global_step, global_epoch
     resumed_step = global_step
     print('start training data folder', train_data_loader)
-    patience = 200
+    patience = 10
 
     current_lr = get_current_lr(optimizer)
     print('The learning rate is: {0}'.format(current_lr))
@@ -232,7 +232,15 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
 
             prog_bar.set_description('Global Step: {0}, Epoch: {1}, Loss: {2}, current learning rate: {3}'.format(global_step, global_epoch, running_loss / (step + 1), current_lr))
 
+            
+
         global_epoch += 1
+
+        for param in model.parameters():
+              if param.grad is not None:
+                  print('The gradient is ', param.grad.norm())
+        # Clip gradients
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         
 
 # Added by eddy

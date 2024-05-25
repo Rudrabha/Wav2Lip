@@ -17,6 +17,8 @@ from glob import glob
 import os, random, cv2, argparse
 from hparams import hparams, get_image_list
 
+from models.conv import Conv2d, Conv2dTranspose
+
 # import module 
 import traceback 
 
@@ -182,20 +184,38 @@ def cosine_loss(a, v, y):
 
     return loss
 
+# added by eddy
+# Register hooks to print gradient norms
+def print_grad_norm(module, grad_input, grad_output):
+    for i, grad in enumerate(grad_output):
+        if grad is not None:
+            print(f'{module.__class__.__name__} - grad_output[{i}] norm: {grad.norm().item()}')
+
+# end added by eddy
+
+
 def train(device, model, train_data_loader, test_data_loader, optimizer,
-          checkpoint_dir=None, checkpoint_interval=None, nepochs=None):
+          checkpoint_dir=None, checkpoint_interval=None, nepochs=None, should_print_grad_norm=False):
 
     global global_step, global_epoch
     resumed_step = global_step
     print('start training data folder', train_data_loader)
-    patience = 10
+    patience = 20
 
     current_lr = get_current_lr(optimizer)
     print('The learning rate is: {0}'.format(current_lr))
 
     # Added by eddy
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.9, patience=patience, verbose=True)
+    
+    if should_print_grad_norm:
+      for name, module in model.named_modules():
+        if isinstance(module, (Conv2d, Conv2dTranspose, nn.Linear)):
+            module.register_backward_hook(print_grad_norm)
+    
     # end
+
+
 
     while global_epoch < nepochs:
         running_loss = 0.
@@ -235,10 +255,10 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             
 
         global_epoch += 1
-
-        for param in model.parameters():
-              if param.grad is not None:
-                  print('The gradient is ', param.grad.norm())
+        if should_print_grad_norm or global_step % 20==0:
+          for param in model.parameters():
+                if param.grad is not None:
+                    print('The gradient is ', param.grad.norm())
         # Clip gradients
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         
@@ -333,7 +353,7 @@ if __name__ == "__main__":
     # Dataset and Dataloader setup
     train_dataset = Dataset('train', False)
     test_dataset = Dataset('val', False)
-    print(train_dataset.all_videos)
+    #print(train_dataset.all_videos)
 
     train_data_loader = data_utils.DataLoader(
         train_dataset, batch_size=hparams.syncnet_batch_size, shuffle=True,
@@ -358,4 +378,4 @@ if __name__ == "__main__":
     train(device, model, train_data_loader, test_data_loader, optimizer,
           checkpoint_dir=checkpoint_dir,
           checkpoint_interval=hparams.syncnet_checkpoint_interval,
-          nepochs=hparams.nepochs)
+          nepochs=hparams.nepochs, should_print_grad_norm=False)

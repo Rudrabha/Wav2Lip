@@ -15,23 +15,28 @@ class SyncNet_color(nn.Module):
             Conv2d(32, 32, kernel_size=(7, 7), stride=1, padding=3), #96x96
             Conv2d(32, 32, kernel_size=(7, 7), stride=1, padding=3, residual=True),
             Conv2d(32, 32, kernel_size=(7, 7), stride=1, padding=3, residual=True),
+            nn.Dropout(0.2),
 
             Conv2d(32, 64, kernel_size=5, stride=(1, 2), padding=1), #94x47
             Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True), #94x47
             Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),#94x47
+            nn.Dropout(0.2),
 
             Conv2d(64, 128, kernel_size=3, stride=2, padding=1), # 47x24
             Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True), # 47x24
             Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True), # 47x24
             Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True), # 47x24
+            nn.Dropout(0.2),
 
             Conv2d(128, 256, kernel_size=3, stride=2, padding=1), # 24x 12
             Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True), # 24x 12
             Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True), # 24x 12
+            nn.Dropout(0.2),
 
             Conv2d(256, 512, kernel_size=3, stride=2, padding=1), #12x6
             Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True), #12x6
             Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True), #12x6
+            nn.Dropout(0.2),
 
             Conv2d(512, 512, kernel_size=3, stride=2, padding=1), #6x3
             Conv2d(512, 512, kernel_size=3, stride=1, padding=0), #6x3

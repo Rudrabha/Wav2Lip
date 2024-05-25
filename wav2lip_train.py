@@ -99,8 +99,26 @@ class Dataset(object):
         return mels
 
     def prepare_window(self, window):
-        # 3 x T x H x W
+        """
+        3 x T x H x W
+        Normalization: The pixel values of the images are divided by 255 to normalize them from a range of [0, 255] to [0, 1]. 
+        This is a common preprocessing step for image data in machine learning to help the model converge faster during training.
+        """
         x = np.asarray(window) / 255.
+
+        """
+        Transposition: The method transposes the dimensions of the array using np.transpose(x, (3, 0, 1, 2)).
+        The original shape of x is assumed to be (T, H, W, C) where:
+        T is the number of images (time steps if treating images as a sequence).
+        H is the height of the images.
+        W is the width of the images.
+        C is the number of color channels (typically 3 for RGB images).
+        The transposition changes the shape to (C, T, H, W) which means:
+        C (number of channels) comes first.
+        T (number of images) comes second.
+        H (height of images) comes third.
+        W (width of images) comes fourth.
+        """
         x = np.transpose(x, (3, 0, 1, 2))
 
         return x

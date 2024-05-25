@@ -47,6 +47,7 @@ class Dataset(object):
         self.audio_cache = {}
         self.orig_mel_cache = {}
         self.file_exist_cache = {}
+        self.use_image_cache = use_image_cache
         if use_image_cache:
           for vidname in self.all_videos:
               img_names = list(glob(join(vidname, '*.jpg')))
@@ -76,6 +77,7 @@ class Dataset(object):
             if not frame in self.file_exist_cache:
               if not isfile(frame):
                 return None    
+            
             
             self.file_exist_cache[frame] = True
             window_fnames.append(frame)

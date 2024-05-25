@@ -208,7 +208,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     print('The learning rate is: {0}'.format(current_lr))
 
     # Added by eddy
-    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.9, patience=patience, verbose=True)
+    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.7, patience=patience, verbose=True)
     
     if should_print_grad_norm:
       for name, module in model.named_modules():

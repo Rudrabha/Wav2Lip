@@ -190,7 +190,7 @@ def cosine_loss(a, v, y):
 # Register hooks to print gradient norms
 def print_grad_norm(module, grad_input, grad_output):
     for i, grad in enumerate(grad_output):
-        if grad is not None:
+        if grad is not None and global_step % 100 == 0:
             print(f'{module.__class__.__name__} - grad_output[{i}] norm: {grad.norm().item()}')
 
 # end added by eddy
@@ -380,4 +380,4 @@ if __name__ == "__main__":
     train(device, model, train_data_loader, test_data_loader, optimizer,
           checkpoint_dir=checkpoint_dir,
           checkpoint_interval=hparams.syncnet_checkpoint_interval,
-          nepochs=hparams.nepochs, should_print_grad_norm=False)
+          nepochs=hparams.nepochs, should_print_grad_norm=True)

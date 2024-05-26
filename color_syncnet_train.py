@@ -257,10 +257,10 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             
 
         global_epoch += 1
-        if should_print_grad_norm or global_step % 20==0:
-          for param in model.parameters():
-                if param.grad is not None:
-                    print('The gradient is ', param.grad.norm())
+        # if should_print_grad_norm or global_step % 20==0:
+        #   for param in model.parameters():
+        #         if param.grad is not None:
+        #             print('The gradient is ', param.grad.norm())
         # Clip gradients
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         

@@ -251,6 +251,9 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             if global_step % hparams.syncnet_eval_interval == 0:
                 with torch.no_grad():
                     eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler)
+            
+            if global_step % checkpoint_interval == 0:
+                save_sample_images(x, y, global_step, checkpoint_dir)
 
             prog_bar.set_description('Global Step: {0}, Epoch: {1}, Loss: {2}, current learning rate: {3}'.format(global_step, global_epoch, running_loss / (step + 1), current_lr))
 
@@ -345,6 +348,18 @@ def load_checkpoint(path, model, optimizer, reset_optimizer=False):
     global_epoch = checkpoint["global_epoch"]
 
     return model
+
+def save_sample_images(x, gt, global_step, checkpoint_dir):
+    x = (x.detach().cpu().numpy().transpose(0, 2, 3, 4, 1) * 255.).astype(np.uint8)
+    gt = (gt.detach().cpu().numpy().transpose(0, 2, 3, 4, 1) * 255.).astype(np.uint8)
+
+    refs, inps = x[..., 3:], x[..., :3]
+    folder = join(checkpoint_dir, "samples_step{:09d}".format(global_step))
+    if not os.path.exists(folder): os.mkdir(folder)
+    collage = np.concatenate((refs, inps, gt), axis=-2)
+    for batch_idx, c in enumerate(collage):
+        for t in range(len(c)):
+            cv2.imwrite('{}/{}_{}.jpg'.format(folder, batch_idx, t), c[t])
 
 if __name__ == "__main__":
     checkpoint_dir = args.checkpoint_dir

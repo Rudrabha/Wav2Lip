@@ -171,10 +171,12 @@ class Dataset(object):
             if (mel.shape[0] != syncnet_mel_step_size):
                 continue
             
-            for i, img in enumerate(window):
-                if i % 100 == 0:
-                  img_to_save = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-                  img_to_save.save(f'saved_image_{idx}_{i}.png')
+            
+            if idx % 100 == 0:
+              print('The video is ', vidname)
+              for i, img in enumerate(window):
+                    img_to_save = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+                    img_to_save.save(f'temp1/saved_image_{idx}_{i}.png')
 
             # H x W x 3 * T
             x = np.concatenate(window, axis=2) / 255.
@@ -254,7 +256,6 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             if global_step == 1 or global_step % checkpoint_interval == 0:
                 save_checkpoint(
                     model, optimizer, global_step, checkpoint_dir, global_epoch)
-                save_sample_images(x, y, global_step, checkpoint_dir)
 
             if global_step % hparams.syncnet_eval_interval == 0:
                 with torch.no_grad():
@@ -354,22 +355,6 @@ def load_checkpoint(path, model, optimizer, reset_optimizer=False):
     global_epoch = checkpoint["global_epoch"]
 
     return model
-
-def save_sample_images(x, gt, global_step, checkpoint_dir):
-    print('start saving images, the x shape is', x.shape)
-    x = (x.detach().cpu().numpy().transpose(0, 2, 3, 4, 1) * 255.).astype(np.uint8)
-    gt = (gt.detach().cpu().numpy().transpose(0, 2, 3, 4, 1) * 255.).astype(np.uint8)
-
-    refs, inps = x[..., 3:], x[..., :3]
-    folder = join(checkpoint_dir, "samples_step{:09d}".format(global_step))
-    if not os.path.exists(folder): os.mkdir(folder)
-
-    print('start concatenation')
-    collage = np.concatenate((refs, inps, gt), axis=-2)
-    for batch_idx, c in enumerate(collage):
-        for t in range(len(c)):
-            print('saving image')
-            cv2.imwrite('{}/{}_{}.jpg'.format(folder, batch_idx, t), c[t])
 
 if __name__ == "__main__":
     checkpoint_dir = args.checkpoint_dir

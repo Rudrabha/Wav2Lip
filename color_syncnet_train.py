@@ -171,12 +171,12 @@ class Dataset(object):
             if (mel.shape[0] != syncnet_mel_step_size):
                 continue
             
-            
-            if idx % 100 == 0:
-              print('The video is ', vidname)
-              for i, img in enumerate(window):
-                    img_to_save = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-                    img_to_save.save(f'temp1/saved_image_{idx}_{i}.png')
+            # Save the sample images
+            # if idx % 100 == 0:
+            #   print('The video is ', vidname)
+            #   for i, img in enumerate(window):
+            #         img_to_save = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+            #         img_to_save.save(f'temp1/saved_image_{idx}_{i}.png')
 
             # H x W x 3 * T
             x = np.concatenate(window, axis=2) / 255.

@@ -22,6 +22,8 @@ from models.conv import Conv2d, Conv2dTranspose
 # import module 
 import traceback 
 
+from PIL import Image
+
 parser = argparse.ArgumentParser(description='Code to train the expert lip-sync discriminator')
 
 parser.add_argument("--data_root", help="Root folder of the preprocessed LRS2 dataset", required=True)
@@ -168,6 +170,11 @@ class Dataset(object):
 
             if (mel.shape[0] != syncnet_mel_step_size):
                 continue
+            
+            for i, img in enumerate(window):
+                if i % 100 == 0:
+                  img_to_save = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+                  img_to_save.save(f'saved_image_{idx}_{i}.png')
 
             # H x W x 3 * T
             x = np.concatenate(window, axis=2) / 255.
@@ -349,7 +356,7 @@ def load_checkpoint(path, model, optimizer, reset_optimizer=False):
     return model
 
 def save_sample_images(x, gt, global_step, checkpoint_dir):
-    print('start saving images')
+    print('start saving images, the x shape is', x.shape)
     x = (x.detach().cpu().numpy().transpose(0, 2, 3, 4, 1) * 255.).astype(np.uint8)
     gt = (gt.detach().cpu().numpy().transpose(0, 2, 3, 4, 1) * 255.).astype(np.uint8)
 

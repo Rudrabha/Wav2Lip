@@ -247,13 +247,12 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             if global_step == 1 or global_step % checkpoint_interval == 0:
                 save_checkpoint(
                     model, optimizer, global_step, checkpoint_dir, global_epoch)
+                save_sample_images(x, y, global_step, checkpoint_dir)
 
             if global_step % hparams.syncnet_eval_interval == 0:
                 with torch.no_grad():
                     eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler)
-            
-            if global_step % checkpoint_interval == 0:
-                save_sample_images(x, y, global_step, checkpoint_dir)
+                
 
             prog_bar.set_description('Global Step: {0}, Epoch: {1}, Loss: {2}, current learning rate: {3}'.format(global_step, global_epoch, running_loss / (step + 1), current_lr))
 

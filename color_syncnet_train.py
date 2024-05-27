@@ -350,15 +350,19 @@ def load_checkpoint(path, model, optimizer, reset_optimizer=False):
     return model
 
 def save_sample_images(x, gt, global_step, checkpoint_dir):
+    print('start saving images')
     x = (x.detach().cpu().numpy().transpose(0, 2, 3, 4, 1) * 255.).astype(np.uint8)
     gt = (gt.detach().cpu().numpy().transpose(0, 2, 3, 4, 1) * 255.).astype(np.uint8)
 
     refs, inps = x[..., 3:], x[..., :3]
     folder = join(checkpoint_dir, "samples_step{:09d}".format(global_step))
     if not os.path.exists(folder): os.mkdir(folder)
+
+    print('start concatenation')
     collage = np.concatenate((refs, inps, gt), axis=-2)
     for batch_idx, c in enumerate(collage):
         for t in range(len(c)):
+            print('saving image')
             cv2.imwrite('{}/{}_{}.jpg'.format(folder, batch_idx, t), c[t])
 
 if __name__ == "__main__":

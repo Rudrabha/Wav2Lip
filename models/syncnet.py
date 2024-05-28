@@ -68,6 +68,11 @@ class SyncNet_color(nn.Module):
         face_embedding = self.face_encoder(face_sequences)
         audio_embedding = self.audio_encoder(audio_sequences)
 
+        """
+        Both audio_embedding and face_embedding are reshaped (flattened) to 2D tensors of shape (B, -1), where B is the batch size and -1 means the remaining dimensions are flattened into a single dimension.
+        This step ensures that the embeddings are in a suitable format for further processing or comparison.
+        """
+
         audio_embedding = audio_embedding.view(audio_embedding.size(0), -1)
         face_embedding = face_embedding.view(face_embedding.size(0), -1)
 

@@ -99,6 +99,13 @@ class Dataset(object):
         return len(self.all_videos)
 
     def __getitem__(self, idx):
+        """
+        Randomly select a video and corresponding images.
+        Randomly choose a correct or incorrect image pair.
+        Read and preprocess the images and audio data.
+        Handle exceptions and retries in case of read errors.
+        Return the processed image data, audio features, and label.
+        """
         
         while 1:
             idx = random.randint(0, len(self.all_videos) - 1)
@@ -190,10 +197,25 @@ class Dataset(object):
 
 logloss = nn.BCELoss()
 def cosine_loss(a, v, y):
+    """
+    Computes the cosine similarity between audio and face embeddings.
+    Reshapes the similarity scores for compatibility with ground truth labels.
+    Uses logistic loss (binary cross-entropy) to penalize incorrect similarity predictions.
+    """
     d = nn.functional.cosine_similarity(a, v)
     loss = logloss(d.unsqueeze(1), y)
 
     return loss
+
+def contrastive_loss(a, v, y, margin=1.0):
+    """
+    Contrastive loss tries to minimize the distance between similar pairs and maximize the distance between dissimilar pairs up to a margin.
+    """
+    d = nn.functional.pairwise_distance(a, v)
+    loss = torch.mean((1 - y) * torch.pow(d, 2) + y * torch.pow(torch.clamp(margin - d, min=0.0), 2))
+    return loss
+
+
 
 # added by eddy
 # Register hooks to print gradient norms

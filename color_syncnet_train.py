@@ -384,6 +384,7 @@ if __name__ == "__main__":
     checkpoint_dir = args.checkpoint_dir
     checkpoint_path = args.checkpoint_path
     use_cosine_loss = args.use_cosine_loss
+    print("The use_cosine_loss value", use_cosine_loss)
 
     if not os.path.exists(checkpoint_dir): os.mkdir(checkpoint_dir)
 

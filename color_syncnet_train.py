@@ -24,13 +24,23 @@ import traceback
 
 from PIL import Image
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
 parser = argparse.ArgumentParser(description='Code to train the expert lip-sync discriminator')
 
 parser.add_argument("--data_root", help="Root folder of the preprocessed LRS2 dataset", required=True)
 
 parser.add_argument('--checkpoint_dir', help='Save checkpoints to this directory', required=True, type=str)
 parser.add_argument('--checkpoint_path', help='Resumed from this checkpoint', default=None, type=str)
-parser.add_argument('--use_cosine_loss', help='Whether to use cosine loss', default=True, type=bool)
+parser.add_argument('--use_cosine_loss', help='Whether to use cosine loss', default=True, type=str2bool)
 
 args = parser.parse_args()
 

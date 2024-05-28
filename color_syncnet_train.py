@@ -37,6 +37,7 @@ args = parser.parse_args()
 global_step = 0
 global_epoch = 0
 use_cuda = torch.cuda.is_available()
+use_cosine_loss=True
 print('use_cuda: {}'.format(use_cuda))
 
 syncnet_T = 5
@@ -267,7 +268,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             a, v = model(mel, x)
             y = y.to(device)
 
-            loss = cosine_loss(a, v, y)
+            loss = cosine_loss(a, v, y) if use_cosine_loss else contrastive_loss(a, v, y)
             loss.backward()
             optimizer.step()
 
@@ -325,7 +326,7 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, sch
             a, v = model(mel, x)
             y = y.to(device)
 
-            loss = cosine_loss(a, v, y)
+            loss = cosine_loss(a, v, y) if use_cosine_loss else contrastive_loss(a, v, y)
             losses.append(loss.item())
 
             #print('Step: {0}, Cosine Loss: {1}'.format(step, loss))
@@ -381,6 +382,7 @@ def load_checkpoint(path, model, optimizer, reset_optimizer=False):
 if __name__ == "__main__":
     checkpoint_dir = args.checkpoint_dir
     checkpoint_path = args.checkpoint_path
+    use_cosine_loss = args.use_cosine_loss
 
     if not os.path.exists(checkpoint_dir): os.mkdir(checkpoint_dir)
 

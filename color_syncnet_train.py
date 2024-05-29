@@ -157,7 +157,7 @@ class Dataset(object):
               print("The random mode image", wrong_img_name)
             else:
               chosen_id = self.get_frame_id(img_name)
-              wrong_img_name = chosen_id + 10 + ".jpg"
+              wrong_img_name = str(chosen_id + 10) + ".jpg"
               print("The easy mode image", wrong_img_name)
 
             while wrong_img_name == img_name:

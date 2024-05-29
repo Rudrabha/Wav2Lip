@@ -162,9 +162,13 @@ class Dataset(object):
 
               # Get the substring up to and including the last slash
               dir_name = img_name[:last_slash_index+1]
+              index = 10
 
-              wrong_img_name = dir_name + str(chosen_id + 10) + ".jpg"
-              print("The easy mode image", wrong_img_name)
+              wrong_img_name = dir_name + str(chosen_id + index) + ".jpg"
+              while wrong_img_name not in img_names:
+                index -= 1
+                wrong_img_name = dir_name + str(chosen_id + index) + ".jpg"
+                if wrong_img_name
 
             while wrong_img_name == img_name:
                 wrong_img_name = random.choice(img_names)

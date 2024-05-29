@@ -41,6 +41,7 @@ parser.add_argument("--data_root", help="Root folder of the preprocessed LRS2 da
 parser.add_argument('--checkpoint_dir', help='Save checkpoints to this directory', required=True, type=str)
 parser.add_argument('--checkpoint_path', help='Resumed from this checkpoint', default=None, type=str)
 parser.add_argument('--use_cosine_loss', help='Whether to use cosine loss', default=True, type=str2bool)
+parser.add_argument('--sample_mode', help='easy or random', default=True, type=str)
 
 args = parser.parse_args()
 
@@ -49,8 +50,13 @@ global_step = 0
 global_epoch = 0
 use_cuda = torch.cuda.is_available()
 use_cosine_loss=True
+sample_mode='random'
 print('use_cuda: {}'.format(use_cuda))
 
+"""
+The FPS is set to 25 for video, 5/25 is 0.2, we need to have 0.2 seconds for the audio,
+because the audio mel spectrogram ususlly has 80 frame per seconds, so 16/80 is 0.2 seconds
+"""
 syncnet_T = 5
 syncnet_mel_step_size = 16
 
@@ -100,6 +106,13 @@ class Dataset(object):
     def crop_audio_window(self, spec, start_frame):
         # num_frames = (T x hop_size * fps) / sample_rate
         start_frame_num = self.get_frame_id(start_frame)
+
+        """
+        80. is a scaling factor used to convert the time in seconds to the index in the audio spectrogram.
+        This scaling factor is related to how the audio spectrogram is calculated and the time resolution of the spectrogram.
+        For instance, if the spectrogram has a time resolution of 12.5 ms per frame (which is typical for many audio processing tasks), 
+        80 frames per second would correspond to 1.25 seconds. This means the spectrogram has a higher temporal resolution than the video.
+        """
         start_idx = int(80. * (start_frame_num / float(hparams.fps)))
 
         end_idx = start_idx + syncnet_mel_step_size
@@ -127,8 +140,26 @@ class Dataset(object):
             
             if len(img_names) <= 3 * syncnet_T:
                 continue
+            
+            """
+            Changed by eddy, the following are the original codes, it uses random to get the wrong_img_name, 
+            this might get an image that very close to the correct image(the next frame) which is a bit hard to learn.
+            Eddy introduced a new algorithm that to get a image a bit futher from the img_name to have enough difference,
+            this might help the model to converge.
+            However we can't just learn the easy samples, so we use a flag to control that
             img_name = random.choice(img_names)
             wrong_img_name = random.choice(img_names)
+            """
+            
+            img_name = random.choice(img_names)
+            if sample_mode == 'random':
+              wrong_img_name = random.choice(img_names)
+              print("The random mode image", wrong_img_name)
+            else:
+              chosen_id = self.get_frame_id(img_name)
+              wrong_img_name = chosen_id + 10 + ".jpg"
+              print("The easy mode image", wrong_img_name)
+
             while wrong_img_name == img_name:
                 wrong_img_name = random.choice(img_names)
 
@@ -394,7 +425,9 @@ if __name__ == "__main__":
     checkpoint_dir = args.checkpoint_dir
     checkpoint_path = args.checkpoint_path
     use_cosine_loss = args.use_cosine_loss
+    sample_mode = args.sample_mode
     print("The use_cosine_loss value", use_cosine_loss)
+    print("The sample mode value", sample_mode)
 
     if not os.path.exists(checkpoint_dir): os.mkdir(checkpoint_dir)
 

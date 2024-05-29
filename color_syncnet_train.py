@@ -157,8 +157,13 @@ class Dataset(object):
               print("The random mode image", wrong_img_name)
             else:
               chosen_id = self.get_frame_id(img_name)
-              dir_name = img_name.split("\\")[0]
-              wrong_img_name = dir_name + "\\" + str(chosen_id + 10) + ".jpg"
+              # Find the position of the last slash
+              last_slash_index = img_name.rfind('/')
+
+              # Get the substring up to and including the last slash
+              dir_name = img_name[:last_slash_index+1]
+
+              wrong_img_name = dir_name + str(chosen_id + 10) + ".jpg"
               print("The easy mode image", wrong_img_name)
 
             while wrong_img_name == img_name:

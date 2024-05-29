@@ -165,12 +165,13 @@ class Dataset(object):
               index = 10
 
               wrong_img_name = dir_name + str(chosen_id + index) + ".jpg"
+
               while wrong_img_name not in img_names:
                 index -= 1
                 wrong_img_name = dir_name + str(chosen_id + index) + ".jpg"
                 if index < 5:
                     wrong_img_name = random.choice(img_names)
-                    print("Cannot find a good one, use random instead")
+                    print("Cannot find a good one, use random instead, original img_name {0} and the not good one is {1}".format(img_name, wrong_img_name))
                     continue
 
             while wrong_img_name == img_name:

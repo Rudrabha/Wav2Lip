@@ -177,7 +177,16 @@ class Dataset(object):
             while wrong_img_name == img_name:
                 wrong_img_name = random.choice(img_names)
 
-            if random.choice([True, False]):
+            good_or_bad = True
+            if global_step > 5000 and global_step < 10000:
+                # Start using 20% bad example for training
+                good_or_bad = random.choice([True, False, True, True, True])
+            elif global_step > 10000:
+              # Start using 25% bad example for training
+              good_or_bad = random.choice([True, False, True, True])
+
+
+            if good_or_bad:
                 y = torch.ones(1).float()
                 chosen = img_name
             else:

@@ -276,7 +276,8 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
                 with torch.no_grad():
                     average_sync_loss = eval_model(test_data_loader, global_step, device, model, checkpoint_dir)
 
-                    if average_sync_loss < .75:
+                    #if average_sync_loss < .75:
+                    if average_sync_loss < .65: # change 
                         hparams.set_hparam('syncnet_wt', 0.01) # without image GAN a lesser weight is sufficient
 
             prog_bar.set_description('Training Loss, L1: {}, Sync Loss: {}'.format(running_l1_loss / (step + 1),

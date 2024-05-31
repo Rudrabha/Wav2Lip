@@ -249,6 +249,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             module.register_backward_hook(print_grad_norm)
  
     while global_epoch < nepochs:
+        current_lr = get_current_lr(optimizer)
         print('Starting Epoch: {}'.format(global_epoch))
         running_sync_loss, running_l1_loss = 0., 0.
         prog_bar = tqdm(enumerate(train_data_loader))
@@ -307,8 +308,8 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
                     if average_sync_loss < .65: # change 
                         hparams.set_hparam('syncnet_wt', 0.01) # without image GAN a lesser weight is sufficient
 
-            prog_bar.set_description('Training Loss, L1: {}, Sync Loss: {}'.format(running_l1_loss / (step + 1),
-                                                                    running_sync_loss / (step + 1)))
+            prog_bar.set_description('Training Loss, L1: {}, Sync Loss: {}, current learning rate: {3}'.format(running_l1_loss / (step + 1),
+                                                                    running_sync_loss / (step + 1), current_lr))
 
         global_epoch += 1
         

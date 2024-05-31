@@ -308,7 +308,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
                     if average_sync_loss < .65: # change 
                         hparams.set_hparam('syncnet_wt', 0.01) # without image GAN a lesser weight is sufficient
 
-            prog_bar.set_description('Training Loss, L1: {}, Sync Loss: {}, current learning rate: {3}'.format(running_l1_loss / (step + 1),
+            prog_bar.set_description('Training Loss, L1: {}, Sync Loss: {}, current learning rate: {}'.format(running_l1_loss / (step + 1),
                                                                     running_sync_loss / (step + 1), current_lr))
 
         global_epoch += 1

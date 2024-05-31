@@ -17,6 +17,9 @@ from glob import glob
 import os, random, cv2, argparse
 from hparams import hparams, get_image_list
 
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+from models.conv import Conv2d, Conv2dTranspose
+
 parser = argparse.ArgumentParser(description='Code to train the Wav2Lip model without the visual quality discriminator')
 
 parser.add_argument("--data_root", help="Root folder of the preprocessed LRS2 dataset", required=True, type=str)
@@ -215,11 +218,35 @@ def get_sync_loss(mel, g):
     y = torch.ones(g.size(0), 1).float().to(device)
     return cosine_loss(a, v, y)
 
+def print_grad_norm(module, grad_input, grad_output):
+    for i, grad in enumerate(grad_output):
+        if grad is not None and global_step % 500 == 0:
+            print(f'{module.__class__.__name__} - grad_output[{i}] norm: {grad.norm().item()}')
+
+# Added by eddy
+def get_current_lr(optimizer):
+    # Assuming there is only one parameter group
+    for param_group in optimizer.param_groups:
+        return param_group['lr']
+
 def train(device, model, train_data_loader, test_data_loader, optimizer,
-          checkpoint_dir=None, checkpoint_interval=None, nepochs=None):
+          checkpoint_dir=None, checkpoint_interval=None, nepochs=None, should_print_grad_norm=True):
 
     global global_step, global_epoch
     resumed_step = global_step
+
+    patience = 20
+
+    current_lr = get_current_lr(optimizer)
+    print('The learning rate is: {0}'.format(current_lr))
+
+    # Added by eddy
+    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.7, patience=patience, verbose=True)
+
+    if should_print_grad_norm:
+      for name, module in model.named_modules():
+        if isinstance(module, (Conv2d, Conv2dTranspose, nn.Linear)):
+            module.register_backward_hook(print_grad_norm)
  
     while global_epoch < nepochs:
         print('Starting Epoch: {}'.format(global_epoch))
@@ -266,7 +293,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
 
             if global_step == 1:
                 with torch.no_grad():
-                    average_sync_loss = eval_model(test_data_loader, global_step, device, model, checkpoint_dir, 10)
+                    average_sync_loss = eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler, 10)
 
                     if average_sync_loss < .75:
                         hparams.set_hparam('syncnet_wt', 0.01) # without image GAN a lesser weight is sufficient
@@ -274,7 +301,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             else:
               if global_step % hparams.eval_interval == 0:
                 with torch.no_grad():
-                    average_sync_loss = eval_model(test_data_loader, global_step, device, model, checkpoint_dir, 20)
+                    average_sync_loss = eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler, 20)
 
                     #if average_sync_loss < .75:
                     if average_sync_loss < .65: # change 
@@ -286,7 +313,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
         global_epoch += 1
         
 
-def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, eval_steps = 100):
+def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler, eval_steps = 100):
     print('Evaluating for {} steps'.format(eval_steps))
     sync_losses, recon_losses = [], []
     step = 0
@@ -313,6 +340,8 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, eva
             averaged_recon_loss = sum(recon_losses) / len(recon_losses)
 
             print('Eval Loss, L1: {}, Sync loss: {}'.format(averaged_recon_loss, averaged_sync_loss))
+
+            scheduler.step(averaged_sync_loss + averaged_recon_loss)
 
             if step > eval_steps: 
               return averaged_sync_loss

@@ -442,6 +442,10 @@ def load_checkpoint(path, model, optimizer, reset_optimizer=False):
     global_step = checkpoint["global_step"]
     global_epoch = checkpoint["global_epoch"]
 
+    # Reset the new learning rate
+    # for param_group in optimizer.param_groups:
+    #     param_group['lr'] = 0.0001
+
     return model
 
 if __name__ == "__main__":

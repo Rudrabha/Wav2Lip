@@ -178,12 +178,18 @@ class Dataset(object):
                 wrong_img_name = random.choice(img_names)
 
             good_or_bad = True
-            if global_step > 18000 and global_step < 25000:
+            if global_step > 18000 and global_step < 20000:
               # Start using 10% bad example for training
               good_or_bad = random.choice([False, True, True, True, True, True, True, True, True, True])
-            elif global_step > 25000:
+            elif global_step > 20000 and global_step < 22000:
               # Start using 20% bad example for training
               good_or_bad = random.choice([False, False, True, True, True, True, True, True, True, True])
+            elif global_step > 22000 and global_step < 24000:
+              # Start using 30% bad example for training
+              good_or_bad = random.choice([False, False, False, True, True, True, True, True, True, True])
+            elif global_step > 24000:
+              # Start using 40% bad example for training
+              good_or_bad = random.choice([False, False, False, False, True, True, True, True, True, True])
 
 
             if good_or_bad:
@@ -299,7 +305,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     global global_step, global_epoch
     resumed_step = global_step
     print('start training data folder', train_data_loader)
-    patience = 20
+    patience = 100
 
     current_lr = get_current_lr(optimizer)
     print('The learning rate is: {0}'.format(current_lr))

@@ -178,12 +178,12 @@ class Dataset(object):
                 wrong_img_name = random.choice(img_names)
 
             good_or_bad = True
-            if global_step > 20000 and global_step < 50000:
-                # Start using 20% bad example for training
-                good_or_bad = random.choice([True, False, True, True, True])
-            elif global_step > 50000:
-              # Start using 25% bad example for training
-              good_or_bad = random.choice([True, False, True, True])
+            if global_step > 18000 and global_step < 25000:
+              # Start using 10% bad example for training
+              good_or_bad = random.choice([False, True, True, True, True, True, True, True, True, True])
+            elif global_step > 25000:
+              # Start using 20% bad example for training
+              good_or_bad = random.choice([False, False, True, True, True, True, True, True, True, True])
 
 
             if good_or_bad:

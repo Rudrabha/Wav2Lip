@@ -274,7 +274,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             else:
               if global_step % hparams.eval_interval == 0:
                 with torch.no_grad():
-                    average_sync_loss = eval_model(test_data_loader, global_step, device, model, checkpoint_dir)
+                    average_sync_loss = eval_model(test_data_loader, global_step, device, model, checkpoint_dir, 20)
 
                     #if average_sync_loss < .75:
                     if average_sync_loss < .65: # change 

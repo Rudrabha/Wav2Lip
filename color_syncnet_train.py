@@ -51,6 +51,10 @@ global_epoch = 0
 use_cuda = torch.cuda.is_available()
 use_cosine_loss=True
 sample_mode='random'
+current_training_loss = 0.6
+learning_step_loss_threshhold = 0.3
+consecutive_threshold_count = 0
+
 print('use_cuda: {}'.format(use_cuda))
 
 """
@@ -177,20 +181,23 @@ class Dataset(object):
             while wrong_img_name == img_name:
                 wrong_img_name = random.choice(img_names)
 
-            good_or_bad = True
-            if global_step > 18000 and global_step < 20000:
-              # Start using 10% bad example for training
-              good_or_bad = random.choice([False, True, True, True, True, True, True, True, True, True])
-            elif global_step > 20000 and global_step < 22000:
-              # Start using 20% bad example for training
-              good_or_bad = random.choice([False, False, True, True, True, True, True, True, True, True])
-            elif global_step > 22000 and global_step < 24000:
-              # Start using 30% bad example for training
-              good_or_bad = random.choice([False, False, False, True, True, True, True, True, True, True])
-            elif global_step > 24000:
-              # Start using 40% bad example for training
-              good_or_bad = random.choice([False, False, False, False, True, True, True, True, True, True])
 
+            # We firstly to learn all the positive, once it reach the loss of less than 0.3, we incrementally add some negative samples 10% per step
+            samples = [True, True,True, True,True, True,True, True,True, True]
+
+            good_or_bad = True
+            if current_training_loss < 0.3:
+              consecutive_threshold_count += 1
+            else:
+              consecutive_threshold_count = 0
+
+            if consecutive_threshold_count >= 10:
+              # Find the index of the first occurrence of True
+              first_true_index = samples.index(True)
+              # Change the element at that index to False
+              samples[first_true_index] = False
+
+            good_or_bad = random.choice(samples)
 
             if good_or_bad:
                 y = torch.ones(1).float()
@@ -203,7 +210,6 @@ class Dataset(object):
             window_fnames = self.get_window(chosen)
             if window_fnames is None:
                 continue
-
             
             window = []
 
@@ -355,11 +361,10 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
                 with torch.no_grad():
                     eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler)
                 
-
-            prog_bar.set_description('Global Step: {0}, Epoch: {1}, Loss: {2}, current learning rate: {3}'.format(global_step, global_epoch, running_loss / (step + 1), current_lr))
+            current_training_loss = running_loss / (step + 1)
+            prog_bar.set_description('Global Step: {0}, Epoch: {1}, Loss: {2}, current learning rate: {3}'.format(global_step, global_epoch, current_training_loss, current_lr))
 
             
-
         global_epoch += 1
         # if should_print_grad_norm or global_step % 20==0:
         #   for param in model.parameters():

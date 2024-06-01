@@ -51,9 +51,11 @@ global_epoch = 0
 use_cuda = torch.cuda.is_available()
 use_cosine_loss=True
 sample_mode='random'
+
 current_training_loss = 0.6
 learning_step_loss_threshhold = 0.3
 consecutive_threshold_count = 0
+samples = [True, True,True, True,True, True,True, True,True, True]
 
 print('use_cuda: {}'.format(use_cuda))
 
@@ -183,7 +185,7 @@ class Dataset(object):
 
 
             # We firstly to learn all the positive, once it reach the loss of less than 0.3, we incrementally add some negative samples 10% per step
-            samples = [True, True,True, True,True, True,True, True,True, True]
+            
 
             good_or_bad = True
             if current_training_loss < 0.3:
@@ -192,6 +194,7 @@ class Dataset(object):
               consecutive_threshold_count = 0
 
             if consecutive_threshold_count >= 10:
+              print('Adding negative samples, the current samples are', samples)
               # Find the index of the first occurrence of True
               first_true_index = samples.index(True)
               # Change the element at that index to False

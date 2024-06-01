@@ -188,17 +188,6 @@ class Dataset(object):
             
 
             good_or_bad = True
-            if current_training_loss < 0.3:
-              consecutive_threshold_count += 1
-            else:
-              consecutive_threshold_count = 0
-
-            if consecutive_threshold_count >= 10:
-              print('Adding negative samples, the current samples are', samples)
-              # Find the index of the first occurrence of True
-              first_true_index = samples.index(True)
-              # Change the element at that index to False
-              samples[first_true_index] = False
 
             good_or_bad = random.choice(samples)
 
@@ -311,7 +300,7 @@ def print_grad_norm(module, grad_input, grad_output):
 def train(device, model, train_data_loader, test_data_loader, optimizer,
           checkpoint_dir=None, checkpoint_interval=None, nepochs=None, should_print_grad_norm=False):
 
-    global global_step, global_epoch
+    global global_step, global_epoch, consecutive_threshold_count, current_training_loss
     resumed_step = global_step
     print('start training data folder', train_data_loader)
     patience = 100
@@ -367,6 +356,19 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             current_training_loss = running_loss / (step + 1)
             prog_bar.set_description('Global Step: {0}, Epoch: {1}, Loss: {2}, current learning rate: {3}'.format(global_step, global_epoch, current_training_loss, current_lr))
 
+        if current_training_loss < 0.3:
+          consecutive_threshold_count += 1
+        else:
+          consecutive_threshold_count = 0
+            
+        if consecutive_threshold_count >= 10:
+          # Find the index of the first occurrence of True
+          first_true_index = samples.index(True)
+          # Change the element at that index to False
+          samples[first_true_index] = False
+
+          print('Adding negative samples, the current samples are', samples)
+                
             
         global_epoch += 1
         # if should_print_grad_norm or global_step % 20==0:

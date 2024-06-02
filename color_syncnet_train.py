@@ -303,7 +303,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     global global_step, global_epoch, consecutive_threshold_count, current_training_loss
     resumed_step = global_step
     print('start training data folder', train_data_loader)
-    patience = 100
+    patience = 40
 
     current_lr = get_current_lr(optimizer)
     print('The learning rate is: {0}'.format(current_lr))

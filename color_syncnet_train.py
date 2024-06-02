@@ -20,7 +20,8 @@ from hparams import hparams, get_image_list
 from models.conv import Conv2d, Conv2dTranspose
 
 # import module 
-import traceback 
+import traceback
+import wandb
 
 from PIL import Image
 
@@ -300,6 +301,18 @@ def print_grad_norm(module, grad_input, grad_output):
 def train(device, model, train_data_loader, test_data_loader, optimizer,
           checkpoint_dir=None, checkpoint_interval=None, nepochs=None, should_print_grad_norm=False):
 
+    wandb.init(
+      # set the wandb project where this run will be logged
+      project="my-awesome-project",
+
+      # track hyperparameters and run metadata
+      config={
+      "learning_rate": hparams.syncnet_lr,
+      "architecture": "Syncnet",
+      "dataset": "MyOwn",
+      "epochs": 2000,
+      }
+    )
     global global_step, global_epoch, consecutive_threshold_count, current_training_loss
     resumed_step = global_step
     print('start training data folder', train_data_loader)
@@ -355,6 +368,11 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
                 
             current_training_loss = running_loss / (step + 1)
             prog_bar.set_description('Global Step: {0}, Epoch: {1}, Loss: {2}, current learning rate: {3}'.format(global_step, global_epoch, current_training_loss, current_lr))
+            metrics = {"train/train_loss": current_training_loss, 
+                       "train/step": global_step, 
+                       "train/epoch": global_epoch}
+            
+            wandb.log({**metrics})
 
         if current_training_loss < 0.3:
           consecutive_threshold_count += 1

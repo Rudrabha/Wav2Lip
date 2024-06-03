@@ -451,8 +451,8 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, sch
         print('The avg eval loss is: {0}'.format(averaged_loss))
 
         metrics = {"val/loss": averaged_loss, 
-                    "train/step": global_step, 
-                    "train/epoch": global_epoch}
+                    "val/step": global_step, 
+                    "val/epoch": global_epoch}
             
         wandb.log({**metrics})
         # Scheduler step with average training loss

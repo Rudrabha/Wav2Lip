@@ -303,14 +303,14 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
 
     wandb.init(
       # set the wandb project where this run will be logged
-      project="my-awesome-project",
+      project="my-wav2lip",
 
       # track hyperparameters and run metadata
       config={
       "learning_rate": hparams.syncnet_lr,
       "architecture": "Syncnet",
       "dataset": "MyOwn",
-      "epochs": 2000,
+      "epochs": 200000,
       }
     )
     global global_step, global_epoch, consecutive_threshold_count, current_training_loss
@@ -370,7 +370,8 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             prog_bar.set_description('Global Step: {0}, Epoch: {1}, Loss: {2}, current learning rate: {3}'.format(global_step, global_epoch, current_training_loss, current_lr))
             metrics = {"train/train_loss": current_training_loss, 
                        "train/step": global_step, 
-                       "train/epoch": global_epoch}
+                       "train/epoch": global_epoch,
+                       "train/learning_rate": current_lr}
             
             wandb.log({**metrics})
 
@@ -409,6 +410,20 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, sch
     eval_steps = 20
     eval_loop = 20
     current_step = 1
+
+    wandb.init(
+      # set the wandb project where this run will be logged
+      project="my-wav2lip",
+
+      # track hyperparameters and run metadata
+      config={
+      "learning_rate": hparams.syncnet_lr,
+      "architecture": "Syncnet",
+      "dataset": "MyOwn",
+      "epochs": 200000,
+      }
+    )
+    
     print()
     print('Evaluating for {0} steps of total steps {1}'.format(eval_steps, len(test_data_loader)))
     losses = []
@@ -434,6 +449,12 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, sch
 
         averaged_loss = sum(losses) / len(losses)
         print('The avg eval loss is: {0}'.format(averaged_loss))
+
+        metrics = {"val/loss": averaged_loss, 
+                    "train/step": global_step, 
+                    "train/epoch": global_epoch}
+            
+        wandb.log({**metrics})
         # Scheduler step with average training loss
         scheduler.step(averaged_loss)
         current_step += 1

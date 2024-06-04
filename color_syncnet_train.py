@@ -56,7 +56,7 @@ sample_mode='random'
 current_training_loss = 0.6
 learning_step_loss_threshhold = 0.3
 consecutive_threshold_count = 0
-samples = [True, True,True, True,True, True,True, True,True, True]
+samples = [True, True,True, True,True, True,True, False,False, False]
 
 print('use_cuda: {}'.format(use_cuda))
 
@@ -138,9 +138,9 @@ class Dataset(object):
         Handle exceptions and retries in case of read errors.
         Return the processed image data, audio features, and label.
         """
-        
+        #print("working on", self.all_videos[idx])
         while 1:
-            idx = random.randint(0, len(self.all_videos) - 1)
+            #idx = random.randint(0, len(self.all_videos) - 1)
             vidname = self.all_videos[idx]
 
             img_names = list(glob(join(vidname, '*.jpg')))

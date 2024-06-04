@@ -278,12 +278,13 @@ def cosine_loss(a, v, y):
 
     return loss
 
-contra_loss = nn.CosineEmbeddingLoss()
-def contrastive_loss(a, v, y):
+
+def contrastive_loss(a, v, y, margin=1.0):
     """
     Contrastive loss tries to minimize the distance between similar pairs and maximize the distance between dissimilar pairs up to a margin.
     """
-    loss = contra_loss(a, v, y)
+    d = nn.functional.pairwise_distance(a, v)
+    loss = torch.mean((1 - y) * torch.pow(d, 2) + y * torch.pow(torch.clamp(margin - d, min=0.0), 2))
     return loss
 
 

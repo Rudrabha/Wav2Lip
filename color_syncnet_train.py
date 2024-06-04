@@ -301,18 +301,7 @@ def print_grad_norm(module, grad_input, grad_output):
 def train(device, model, train_data_loader, test_data_loader, optimizer,
           checkpoint_dir=None, checkpoint_interval=None, nepochs=None, should_print_grad_norm=False):
 
-    wandb.init(
-      # set the wandb project where this run will be logged
-      project="my-wav2lip",
-
-      # track hyperparameters and run metadata
-      config={
-      "learning_rate": hparams.syncnet_lr,
-      "architecture": "Syncnet",
-      "dataset": "MyOwn",
-      "epochs": 200000,
-      }
-    )
+    
     global global_step, global_epoch, consecutive_threshold_count, current_training_loss
     resumed_step = global_step
     print('start training data folder', train_data_loader)
@@ -411,19 +400,7 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, sch
     eval_loop = 20
     current_step = 1
 
-    wandb.init(
-      # set the wandb project where this run will be logged
-      project="my-wav2lip",
-
-      # track hyperparameters and run metadata
-      config={
-      "learning_rate": hparams.syncnet_lr,
-      "architecture": "Syncnet",
-      "dataset": "MyOwn",
-      "epochs": 200000,
-      }
-    )
-    
+        
     print()
     print('Evaluating for {0} steps of total steps {1}'.format(eval_steps, len(test_data_loader)))
     losses = []
@@ -510,6 +487,19 @@ if __name__ == "__main__":
     sample_mode = args.sample_mode
     print("The use_cosine_loss value", use_cosine_loss)
     print("The sample mode value", sample_mode)
+
+    wandb.init(
+      # set the wandb project where this run will be logged
+      project="my-wav2lip",
+
+      # track hyperparameters and run metadata
+      config={
+      "learning_rate": hparams.syncnet_lr,
+      "architecture": "Syncnet",
+      "dataset": "MyOwn",
+      "epochs": 200000,
+      }
+    )
 
     if not os.path.exists(checkpoint_dir): os.mkdir(checkpoint_dir)
 

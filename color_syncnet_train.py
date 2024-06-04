@@ -196,7 +196,7 @@ class Dataset(object):
                 y = torch.ones(1).float()
                 chosen = img_name
             else:
-                y = torch.zeros(1).float()
+                y = torch.zeros(1).float() if use_cosine_loss else torch.tensor([1.]).float()
                 chosen = wrong_img_name
 
             

@@ -371,12 +371,14 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
           consecutive_threshold_count = 0
             
         if consecutive_threshold_count >= 10:
-          # Find the index of the first occurrence of True
-          first_true_index = samples.index(True)
-          # Change the element at that index to False
-          samples[first_true_index] = False
+          false_count = samples.count(False)
+          if false_count < 5:
+            # Find the index of the first occurrence of True
+            first_true_index = samples.index(True)
+            # Change the element at that index to False
+            samples[first_true_index] = False
 
-          print('Adding negative samples, the current samples are', samples)
+            print('Adding negative samples, the current samples are', samples)
                 
             
         global_epoch += 1

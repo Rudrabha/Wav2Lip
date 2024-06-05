@@ -6,6 +6,9 @@ from models import Wav2Lip as Wav2Lip
 import audio
 
 import torch
+
+import wandb
+
 from torch import nn
 from torch import optim
 import torch.backends.cudnn as cudnn
@@ -20,6 +23,17 @@ from hparams import hparams, get_image_list
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from models.conv import Conv2d, Conv2dTranspose
 
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
 parser = argparse.ArgumentParser(description='Code to train the Wav2Lip model without the visual quality discriminator')
 
 parser.add_argument("--data_root", help="Root folder of the preprocessed LRS2 dataset", required=True, type=str)
@@ -28,12 +42,14 @@ parser.add_argument('--checkpoint_dir', help='Save checkpoints to this directory
 parser.add_argument('--syncnet_checkpoint_path', help='Load the pre-trained Expert discriminator', required=True, type=str)
 
 parser.add_argument('--checkpoint_path', help='Resume from this checkpoint', default=None, type=str)
+parser.add_argument('--use_cosine_loss', help='Whether to use cosine loss', default=True, type=str2bool)
 
 args = parser.parse_args()
 
 
 global_step = 0
 global_epoch = 0
+use_cosine_loss=True
 use_cuda = torch.cuda.is_available()
 print('use_cuda: {}'.format(use_cuda))
 
@@ -204,6 +220,14 @@ def cosine_loss(a, v, y):
 
     return loss
 
+def contrastive_loss(a, v, y, margin=0.5):
+    """
+    Contrastive loss tries to minimize the distance between similar pairs and maximize the distance between dissimilar pairs up to a margin.
+    """
+    d = nn.functional.pairwise_distance(a, v)
+    loss = torch.mean((1 - y) * torch.pow(d, 2) + y * torch.pow(torch.clamp(margin - d, min=0.0), 2))
+    return loss
+
 device = torch.device("cuda" if use_cuda else "cpu")
 syncnet = SyncNet().to(device)
 for p in syncnet.parameters():
@@ -216,11 +240,11 @@ def get_sync_loss(mel, g):
     # B, 3 * T, H//2, W
     a, v = syncnet(mel, g)
     y = torch.ones(g.size(0), 1).float().to(device)
-    return cosine_loss(a, v, y)
+    return cosine_loss(a, v, y) if use_cosine_loss else contrastive_loss(a, v, y)
 
 def print_grad_norm(module, grad_input, grad_output):
     for i, grad in enumerate(grad_output):
-        if grad is not None and global_step % 500 == 0:
+        if grad is not None and global_step % 1000 == 0:
             print(f'{module.__class__.__name__} - grad_output[{i}] norm: {grad.norm().item()}')
 
 # Added by eddy
@@ -240,6 +264,19 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     current_lr = get_current_lr(optimizer)
     print('The learning rate is: {0}'.format(current_lr))
 
+    wandb.init(
+      # set the wandb project where this run will be logged
+      project="my-wav2lip",
+
+      # track hyperparameters and run metadata
+      config={
+      "learning_rate": current_lr,
+      "architecture": "Wav2lip",
+      "dataset": "MyOwn",
+      "epochs": 200000,
+      }
+    )
+
     # Added by eddy
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.7, patience=patience, verbose=True)
 
@@ -250,67 +287,78 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
  
     while global_epoch < nepochs:
         current_lr = get_current_lr(optimizer)
-        print('Starting Epoch: {}'.format(global_epoch))
+        #print('Starting Epoch: {}'.format(global_epoch))
         running_sync_loss, running_l1_loss = 0., 0.
         prog_bar = tqdm(enumerate(train_data_loader))
         for step, (x, indiv_mels, mel, gt) in prog_bar:
-            model.train()
-            optimizer.zero_grad()
+            #print("The batch size", x.shape)
+            if x.shape[0] == hparams.batch_size:
+              model.train()
+              optimizer.zero_grad()
 
-            # Move data to CUDA device
-            x = x.to(device)
-            mel = mel.to(device)
-            indiv_mels = indiv_mels.to(device)
-            gt = gt.to(device)
+              # Move data to CUDA device
+              x = x.to(device)
+              mel = mel.to(device)
+              indiv_mels = indiv_mels.to(device)
+              gt = gt.to(device)
 
-            g = model(indiv_mels, x)
+              g = model(indiv_mels, x)
 
-            if hparams.syncnet_wt > 0.:
-                sync_loss = get_sync_loss(mel, g)
+              if hparams.syncnet_wt > 0.:
+                  sync_loss = get_sync_loss(mel, g)
+              else:
+                  sync_loss = 0.
+
+              l1loss = recon_loss(g, gt)
+
+              loss = hparams.syncnet_wt * sync_loss + (1 - hparams.syncnet_wt) * l1loss
+              loss.backward()
+              optimizer.step()
+
+              if global_step % checkpoint_interval == 0:
+                  save_sample_images(x, g, gt, global_step, checkpoint_dir)
+
+              global_step += 1
+              cur_session_steps = global_step - resumed_step
+
+              running_l1_loss += l1loss.item()
+              if hparams.syncnet_wt > 0.:
+                  running_sync_loss += sync_loss.item()
+              else:
+                  running_sync_loss += 0.
+
+              if global_step == 1 or global_step % checkpoint_interval == 0:
+                  save_checkpoint(
+                      model, optimizer, global_step, checkpoint_dir, global_epoch)
+
+              if global_step == 1:
+                  with torch.no_grad():
+                      average_sync_loss = eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler, 10)
+
+                      if average_sync_loss < .75:
+                          hparams.set_hparam('syncnet_wt', 0.03) # without image GAN a lesser weight is sufficient
+
+              else:
+                if global_step % hparams.eval_interval == 0:
+                  with torch.no_grad():
+                      average_sync_loss = eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler, 20)
+
+                      #if average_sync_loss < .75:
+                      if average_sync_loss < .65: # change 
+                          hparams.set_hparam('syncnet_wt', 0.03) # without image GAN a lesser weight is sufficient
+
+              prog_bar.set_description('Epoch: {}, Training Loss, L1: {}, Sync Loss: {}, current learning rate: {}, Overall Training Loss: {}'.format(global_epoch, running_l1_loss / (step + 1),
+                                                                      running_sync_loss / (step + 1), current_lr, loss.item()))
+              
+              metrics = {"train/l1_loss": running_l1_loss / (step + 1), 
+                       "train/sync_loss": running_sync_loss / (step + 1), 
+                       "train/epoch": global_epoch,
+                       "train/overall_loss": loss.item(),
+                       "train/learning_rate": current_lr}
+            
+              wandb.log({**metrics})
             else:
-                sync_loss = 0.
-
-            l1loss = recon_loss(g, gt)
-
-            loss = hparams.syncnet_wt * sync_loss + (1 - hparams.syncnet_wt) * l1loss
-            loss.backward()
-            optimizer.step()
-
-            if global_step % checkpoint_interval == 0:
-                save_sample_images(x, g, gt, global_step, checkpoint_dir)
-
-            global_step += 1
-            cur_session_steps = global_step - resumed_step
-
-            running_l1_loss += l1loss.item()
-            if hparams.syncnet_wt > 0.:
-                running_sync_loss += sync_loss.item()
-            else:
-                running_sync_loss += 0.
-
-            if global_step == 1 or global_step % checkpoint_interval == 0:
-                save_checkpoint(
-                    model, optimizer, global_step, checkpoint_dir, global_epoch)
-
-            if global_step == 1:
-                with torch.no_grad():
-                    average_sync_loss = eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler, 10)
-
-                    if average_sync_loss < .75:
-                        hparams.set_hparam('syncnet_wt', 0.01) # without image GAN a lesser weight is sufficient
-
-            else:
-              if global_step % hparams.eval_interval == 0:
-                with torch.no_grad():
-                    average_sync_loss = eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler, 20)
-
-                    #if average_sync_loss < .75:
-                    if average_sync_loss < .65: # change 
-                        hparams.set_hparam('syncnet_wt', 0.01) # without image GAN a lesser weight is sufficient
-
-            prog_bar.set_description('Training Loss, L1: {}, Sync Loss: {}, current learning rate: {}'.format(running_l1_loss / (step + 1),
-                                                                    running_sync_loss / (step + 1), current_lr))
-
+                print("skipping unsacturated batch", global_epoch)
         global_epoch += 1
         
 
@@ -320,32 +368,35 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, sch
     step = 0
     while 1:
         for x, indiv_mels, mel, gt in test_data_loader:
-            step += 1
-            model.eval()
+            if x.shape[0] == hparams.batch_size:
+              step += 1
+              model.eval()
 
-            # Move data to CUDA device
-            x = x.to(device)
-            gt = gt.to(device)
-            indiv_mels = indiv_mels.to(device)
-            mel = mel.to(device)
+              # Move data to CUDA device
+              x = x.to(device)
+              gt = gt.to(device)
+              indiv_mels = indiv_mels.to(device)
+              mel = mel.to(device)
 
-            g = model(indiv_mels, x)
+              g = model(indiv_mels, x)
 
-            sync_loss = get_sync_loss(mel, g)
-            l1loss = recon_loss(g, gt)
+              sync_loss = get_sync_loss(mel, g)
+              l1loss = recon_loss(g, gt)
 
-            sync_losses.append(sync_loss.item())
-            recon_losses.append(l1loss.item())
+              sync_losses.append(sync_loss.item())
+              recon_losses.append(l1loss.item())
 
-            averaged_sync_loss = sum(sync_losses) / len(sync_losses)
-            averaged_recon_loss = sum(recon_losses) / len(recon_losses)
+              averaged_sync_loss = sum(sync_losses) / len(sync_losses)
+              averaged_recon_loss = sum(recon_losses) / len(recon_losses)
 
-            print('Eval Loss, L1: {}, Sync loss: {}'.format(averaged_recon_loss, averaged_sync_loss))
+              print('Eval Loss, L1: {}, Sync loss: {}'.format(averaged_recon_loss, averaged_sync_loss))
 
-            scheduler.step(averaged_sync_loss + averaged_recon_loss)
+              scheduler.step(averaged_sync_loss + averaged_recon_loss)
 
-            if step > eval_steps: 
-              return averaged_sync_loss
+              if step > eval_steps: 
+                return averaged_sync_loss
+            else:
+              print("skipping step", step)    
 
 def save_checkpoint(model, optimizer, step, checkpoint_dir, epoch):
 
@@ -393,6 +444,7 @@ def load_checkpoint(path, model, optimizer, reset_optimizer=False, overwrite_glo
 
 if __name__ == "__main__":
     checkpoint_dir = args.checkpoint_dir
+    use_cosine_loss = args.use_cosine_loss
 
     # Dataset and Dataloader setup
     train_dataset = Dataset('train')

@@ -279,7 +279,7 @@ def cosine_loss(a, v, y):
     return loss
 
 
-def contrastive_loss(a, v, y, margin=1.0):
+def contrastive_loss(a, v, y, margin=0.5):
     """
     Contrastive loss tries to minimize the distance between similar pairs and maximize the distance between dissimilar pairs up to a margin.
     """
@@ -340,7 +340,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             a, v = model(mel, x)
             y = y.to(device)
 
-            loss = cosine_loss(a, v, y) if use_cosine_loss else contrastive_loss(a, v, y)
+            loss = cosine_loss(a, v, y) if (global_step // 100) % 2 == 0 else contrastive_loss(a, v, y)
             loss.backward()
             optimizer.step()
 

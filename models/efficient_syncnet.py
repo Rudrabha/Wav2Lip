@@ -7,21 +7,23 @@ class EfficientSyncNet_color(nn.Module):
     def __init__(self):
         super(EfficientSyncNet_color, self).__init__()
 
-                
+        face_efficientnet = EfficientNet.from_pretrained('efficientnet-b4', in_channels=48)
         self.face_encoder = nn.Sequential(
-            nn.Conv2d(15, 64, kernel_size=(7, 7), stride=2, padding=3, bias=False),
-            EfficientNet.from_pretrained('efficientnet-b4', in_channels=15),
+            nn.Conv2d(15, 48, kernel_size=(7, 7), stride=2, padding=3, bias=False),
+            *list(face_efficientnet.children())[1:-4],  # Exclude the final fully connected layer and average pool
+            nn.AdaptiveAvgPool2d((1, 1))
         )
-        self.fc_face = nn.Linear(self.face_encoder.fc.in_features, 1024)  # Adjust to desired embedding size
-        self.freeze_layers(self.face_encoder, '3')  # Freeze layers up to layer3
+        print(self.face_encoder)
+        self.fc_face = nn.Linear(face_efficientnet._fc.in_features, 1024)  # Adjust to desired embedding size
+        self.freeze_layers(self.face_encoder, 1)  # Freeze layers up to layer3
 
-
+        audio_efficientnet = EfficientNet.from_pretrained('efficientnet-b4', in_channels=64)
         self.audio_encoder = nn.Sequential(
             nn.Conv2d(1, 64, kernel_size=(7, 7), stride=2, padding=3, bias=False),
-            EfficientNet.from_pretrained('efficientnet-b4', in_channels=1),
+            *list(audio_efficientnet.children())[1:-4],  # Exclude the final fully connected layer and average pool
         )
-        self.fc_audio = nn.Linear(self.audio_encoder.fc.in_features, 1024)  # Adjust to desired embedding size
-        self.freeze_layers(self.audio_encoder, '3')  # Freeze layers up to layer3
+        self.fc_audio = nn.Linear(audio_efficientnet._fc.in_features, 1024)  # Adjust to desired embedding size
+        self.freeze_layers(self.audio_encoder, 1)  # Freeze layers up to layer3
 
         
 
@@ -32,8 +34,11 @@ class EfficientSyncNet_color(nn.Module):
         layers = list(model.children())
         print("num of layers", len(layers))
         count = 0
+
         for layer in layers:
+            
             count += 1
+            print("layer:", count)
             if count > num_layers:
                 break
             for param in layer.parameters():

@@ -18,11 +18,11 @@ class SyncNet_color(nn.Module):
             Conv2d(64, 64, kernel_size=(7, 7), stride=1, padding=3, residual=True),
             Conv2d(64, 64, kernel_size=(7, 7), stride=1, padding=3, residual=True),
 
-            Conv2d(64, 64, kernel_size=5, stride=(1, 2), padding=1), #94x47
-            Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True), #94x47
-            Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),#94x47
+            Conv2d(64, 128, kernel_size=5, stride=(1, 2), padding=1), #94x47
+            Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True), #94x47
+            Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True),#94x47
 
-            Conv2d(64, 128, kernel_size=3, stride=2, padding=1), # 47x24
+            Conv2d(128, 128, kernel_size=3, stride=2, padding=1), # 47x24
             Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True), # 47x24
             Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True), # 47x24
             Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True), # 47x24
@@ -35,9 +35,9 @@ class SyncNet_color(nn.Module):
             Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True), #12x6
             Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True), #12x6
 
-            Conv2d(512, 512, kernel_size=3, stride=2, padding=1), #6x3
-            Conv2d(512, 512, kernel_size=3, stride=1, padding=0), #6x3
-            Conv2d(512, 512, kernel_size=1, stride=1, padding=0),) #6x3
+            Conv2d(512, 1024, kernel_size=3, stride=2, padding=1), #6x3
+            Conv2d(1024, 1024, kernel_size=3, stride=1, padding=0), #6x3
+            Conv2d(1024, 1024, kernel_size=1, stride=1, padding=0),) #6x3
 
         self.audio_encoder = nn.Sequential(
             Conv2d(1, 64, kernel_size=3, stride=1, padding=1),
@@ -48,16 +48,16 @@ class SyncNet_color(nn.Module):
             Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True),
 
-            Conv2d(128, 128, kernel_size=3, stride=3, padding=1),
-            Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True),
-            Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True),
-
-            Conv2d(128, 256, kernel_size=3, stride=(3, 2), padding=1),
+            Conv2d(128, 256, kernel_size=3, stride=3, padding=1),
             Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True),
 
-            Conv2d(256, 512, kernel_size=3, stride=1, padding=0),
-            Conv2d(512, 512, kernel_size=1, stride=1, padding=0),)
+            Conv2d(256, 512, kernel_size=3, stride=(3, 2), padding=1),
+            Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True),
+            Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True),
+
+            Conv2d(512, 1024, kernel_size=3, stride=1, padding=0),
+            Conv2d(1024, 1024, kernel_size=1, stride=1, padding=0),)
 
     def forward(self, audio_sequences, face_sequences): # audio_sequences := (B, dim, T)
         face_embedding = self.face_encoder(face_sequences)

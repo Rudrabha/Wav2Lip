@@ -5,9 +5,9 @@ from torchvision import models
 
 from .conv import Conv2d
 
-class SyncNet_color(nn.Module):
+class ResSyncNet_color(nn.Module):
     def __init__(self):
-        super(SyncNet_color, self).__init__()
+        super(ResSyncNet_color, self).__init__()
 
         # Modify ResNet50 for face encoding
         resnet_face = models.resnet152(pretrained=True)

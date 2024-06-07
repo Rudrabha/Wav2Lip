@@ -3,9 +3,9 @@ from torch import nn
 from torch.nn import functional as F
 from efficientnet_pytorch import EfficientNet
 
-class SyncNet_color(nn.Module):
+class EfficientSyncNet_color(nn.Module):
     def __init__(self):
-        super(SyncNet_color, self).__init__()
+        super(EfficientSyncNet_color, self).__init__()
 
         # Modify EfficientNet for face encoding
         self.face_encoder = EfficientNet.from_pretrained('efficientnet-b7', in_channels=15)

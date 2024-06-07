@@ -47,8 +47,8 @@ parser.add_argument('--sample_mode', help='easy or random', default=True, type=s
 args = parser.parse_args()
 
 
-global_step = 0
-global_epoch = 0
+global_step = 1
+global_epoch = 1
 use_cuda = torch.cuda.is_available()
 use_cosine_loss=True
 sample_mode='random'
@@ -196,7 +196,7 @@ class Dataset(object):
                 y = torch.ones(1).float()
                 chosen = img_name
             else:
-                y = torch.zeros(1).float() if use_cosine_loss else torch.tensor([-1.]).float()
+                y = torch.zeros(1).float()
                 chosen = wrong_img_name
 
             
@@ -278,6 +278,27 @@ def cosine_loss(a, v, y):
 
     return loss
 
+def cosine_bce_loss(a, v, y):
+    """
+    Computes the cosine similarity between audio and face embeddings.
+    Applies a sigmoid to the similarity scores for compatibility with ground truth labels.
+    Uses binary cross-entropy loss to penalize incorrect similarity predictions.
+    """
+    
+    # Compute cosine similarity
+    cosine_sim = nn.functional.cosine_similarity(a, v)
+
+    # Apply sigmoid to map similarity scores to [0, 1]
+    sigmoid_sim = torch.sigmoid(cosine_sim)
+
+    # Reshape for BCELoss compatibility
+    sigmoid_sim = sigmoid_sim.unsqueeze(1)
+
+    # Compute binary cross-entropy loss
+    loss = logloss(sigmoid_sim, y)
+
+    return loss
+    
 
 def contrastive_loss(a, v, y, margin=0.5):
     """
@@ -287,7 +308,21 @@ def contrastive_loss(a, v, y, margin=0.5):
     loss = torch.mean((1 - y) * torch.pow(d, 2) + y * torch.pow(torch.clamp(margin - d, min=0.0), 2))
     return loss
 
+def contrastive_loss2(a, v, y, margin=0.3):
+        # Compute the Euclidean distance between the embeddings
+        euclidean_distance = nn.functional.pairwise_distance(a, v)
 
+        # Compute contrastive loss
+        euclidean_distance = (1 - y) * 0.5 * torch.pow(euclidean_distance, 2) + \
+               y * 0.5 * torch.pow(torch.clamp(margin - euclidean_distance, min=0.0), 2)
+        
+        # Apply sigmoid to the Euclidean distance to get a probability-like value
+        sigmoid_distance = torch.sigmoid(euclidean_distance).unsqueeze(1)
+        
+        # Compute binary cross-entropy loss using the sigmoid-transformed distance
+        bce_loss = logloss(sigmoid_distance, y)
+        
+        return bce_loss
 
 # added by eddy
 # Register hooks to print gradient norms
@@ -340,7 +375,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             a, v = model(mel, x)
             y = y.to(device)
 
-            loss = cosine_loss(a, v, y) if (global_step // 100) % 2 == 0 else contrastive_loss(a, v, y)
+            loss = cosine_bce_loss(a, v, y) #if (global_epoch // 50) % 2 == 0 else contrastive_loss2(a, v, y)
             loss.backward()
             optimizer.step()
 
@@ -420,7 +455,7 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, sch
             a, v = model(mel, x)
             y = y.to(device)
 
-            loss = cosine_loss(a, v, y) if use_cosine_loss else contrastive_loss(a, v, y)
+            loss = cosine_bce_loss(a, v, y)
             losses.append(loss.item())
 
             #print('Step: {0}, Cosine Loss: {1}'.format(step, loss))

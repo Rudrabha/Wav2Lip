@@ -63,6 +63,9 @@ class TransformerSyncnet(nn.Module):
             nn.TransformerEncoderLayer(d_model=embed_size, nhead=num_heads, dropout=dropout),
             num_layers=num_encoder_layers
         )
+
+        self.fc = nn.Linear(277760, embed_size)
+
         self.fc1 = nn.Linear(embed_size, 256)
         self.fc2 = nn.Linear(256, num_classes)
         self.relu = nn.ReLU()
@@ -80,6 +83,8 @@ class TransformerSyncnet(nn.Module):
 
         # Concatenate lip frames and audio features
         combined = torch.cat((face_embedding, audio_embedding), dim=1)
+
+        combined = self.fc(combined)
         
         # Pass through the Transformer encoder
         transformer_output = self.transformer_encoder(combined)

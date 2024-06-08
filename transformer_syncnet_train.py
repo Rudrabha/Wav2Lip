@@ -503,7 +503,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # Model
-    model = TransformerSyncnet(embed_size=1024, num_heads=8, num_encoder_layers=6).to(device)
+    model = TransformerSyncnet(embed_size=1024, num_heads=8, num_encoder_layers=2).to(device)
     print('total trainable params {}'.format(sum(p.numel() for p in model.parameters() if p.requires_grad)))
 
     optimizer = optim.Adam([p for p in model.parameters() if p.requires_grad],

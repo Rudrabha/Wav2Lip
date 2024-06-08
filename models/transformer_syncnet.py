@@ -72,6 +72,12 @@ class TransformerSyncnet(nn.Module):
         audio_embedding = audio_embedding.unsqueeze(1)
         face_embedding = face_embedding.unsqueeze(1)
 
+        audio_embedding = audio_embedding.view(audio_embedding.size(0), -1)
+        face_embedding = face_embedding.view(face_embedding.size(0), -1)
+
+        audio_embedding = F.normalize(audio_embedding, p=2, dim=1)
+        face_embedding = F.normalize(face_embedding, p=2, dim=1)
+
         # Concatenate lip frames and audio features
         combined = torch.cat((face_embedding, audio_embedding), dim=1)
         

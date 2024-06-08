@@ -1,7 +1,7 @@
 from os.path import dirname, join, basename, isfile
 from tqdm import tqdm
 
-from models import SyncNet_color as SyncNet
+from models import TransformerSyncnet as TransformerSyncnet
 import audio
 
 import torch
@@ -267,6 +267,8 @@ class Dataset(object):
             return x, mel, y
 
 
+cross_entropy_loss = nn.CrossEntropyLoss()
+
 # added by eddy
 # Register hooks to print gradient norms
 def print_grad_norm(module, grad_input, grad_output):
@@ -299,7 +301,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     
     # end
 
-    cross_entropy_loss = nn.CrossEntropyLoss()
+    
 
     while global_epoch < nepochs:
         running_loss = 0.
@@ -315,14 +317,11 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
 
             mel = mel.to(device)
 
-            a, v = model(mel, x)
+            output = model(mel, x)
+            
             y = y.to(device)
 
-
-            transformer = SyncTransformerNet(embedding_dim=1024, num_heads=8, num_layers=6)
-            output = transformer(a, v)
-
-            loss = cosine_bce_loss(a, v, y) #if (global_epoch // 50) % 2 == 0 else contrastive_loss2(a, v, y)
+            loss = cross_entropy_loss(output, y) #if (global_epoch // 50) % 2 == 0 else contrastive_loss2(a, v, y)
             loss.backward()
             optimizer.step()
 
@@ -399,10 +398,10 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, sch
 
             mel = mel.to(device)
 
-            a, v = model(mel, x)
+            output = model(x, mel)
             y = y.to(device)
 
-            loss = cosine_bce_loss(a, v, y)
+            loss = cross_entropy_loss(output, y)
             losses.append(loss.item())
 
             #print('Step: {0}, Cosine Loss: {1}'.format(step, loss))
@@ -504,7 +503,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # Model
-    model = SyncNet().to(device)
+    model = TransformerSyncnet(embedding_dim=1024, num_heads=8, num_layers=6).to(device)
     print('total trainable params {}'.format(sum(p.numel() for p in model.parameters() if p.requires_grad)))
 
     optimizer = optim.Adam([p for p in model.parameters() if p.requires_grad],

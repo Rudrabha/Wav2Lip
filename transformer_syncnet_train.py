@@ -479,7 +479,7 @@ if __name__ == "__main__":
       # track hyperparameters and run metadata
       config={
       "learning_rate": hparams.syncnet_lr,
-      "architecture": "Syncnet",
+      "architecture": "TransformerSyncnet",
       "dataset": "MyOwn",
       "epochs": 200000,
       }

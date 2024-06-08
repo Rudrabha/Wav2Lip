@@ -89,7 +89,6 @@ class TransformerSyncnet(nn.Module):
         combined = combined.view(combined.size(0), -1)
         
         combined = self.fc(combined)
-        print('after combined', combined.shape)
         
         # Pass through the Transformer encoder
         transformer_output = self.transformer_encoder(combined)

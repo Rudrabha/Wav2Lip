@@ -193,10 +193,10 @@ class Dataset(object):
             good_or_bad = random.choice(samples)
 
             if good_or_bad:
-                y = torch.ones(1).float()
+                y = 1
                 chosen = img_name
             else:
-                y = torch.zeros(1).float()
+                y = 0
                 chosen = wrong_img_name
 
             
@@ -317,9 +317,11 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
 
             mel = mel.to(device)
 
-            output = model(mel, x)
+            output = model(x, mel)
             
             y = y.to(device)
+
+            print('The label', y.shape)
 
             loss = cross_entropy_loss(output, y) #if (global_epoch // 50) % 2 == 0 else contrastive_loss2(a, v, y)
             loss.backward()

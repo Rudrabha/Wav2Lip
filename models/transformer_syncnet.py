@@ -78,22 +78,26 @@ class TransformerSyncnet(nn.Module):
         audio_embedding = audio_embedding.view(audio_embedding.size(0), -1)
         face_embedding = face_embedding.view(face_embedding.size(0), -1)
 
+        # normalise them
         audio_embedding = F.normalize(audio_embedding, p=2, dim=1)
         face_embedding = F.normalize(face_embedding, p=2, dim=1)
 
         # Concatenate lip frames and audio features
         combined = torch.cat((face_embedding, audio_embedding), dim=1)
-
+        
+        # Make sure combined is 1-dimensional
+        combined = combined.view(combined.size(0), -1)
+        
         combined = self.fc(combined)
+        print('after combined', combined.shape)
         
         # Pass through the Transformer encoder
         transformer_output = self.transformer_encoder(combined)
-        
-        # Pool the output (mean pooling)
-        pooled_output = transformer_output.mean(dim=1)
-        
-        out = self.relu(self.fc1(pooled_output))
+      
+        out = self.fc1(transformer_output)
+        out = self.relu(out)
         out = self.fc2(out)
+        #print('the output', out)
         return out
 
 

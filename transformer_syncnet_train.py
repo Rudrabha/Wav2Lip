@@ -321,8 +321,6 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             
             y = y.to(device)
 
-            print('The label', y.shape)
-
             loss = cross_entropy_loss(output, y) #if (global_epoch // 50) % 2 == 0 else contrastive_loss2(a, v, y)
             loss.backward()
             optimizer.step()

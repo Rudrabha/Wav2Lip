@@ -5,7 +5,7 @@ from .conv import Conv2d
 
 class TransformerSyncnet(nn.Module):
     def __init__(self, embed_size, num_heads, num_encoder_layers, num_classes=2, dropout=0.1):
-        super(TransformerClassifier, self).__init__()
+        super(TransformerSyncnet, self).__init__()
 
         self.face_encoder = nn.Sequential(
             # Added by eddy

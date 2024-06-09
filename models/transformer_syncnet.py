@@ -9,20 +9,19 @@ class TransformerSyncnet(nn.Module):
 
         self.face_encoder = nn.Sequential(
             # Added by eddy
-            Conv2d(15, 32, kernel_size=(7, 7), stride=1, padding=3), #192x192
+            Conv2d(15, 64, kernel_size=(7, 7), stride=1, padding=3), #192x192
             nn.Dropout(p=0.3),
             
             # End added
-            Conv2d(32, 32, kernel_size=3, stride=2, padding=1), #96x96
-            Conv2d(32, 32, kernel_size=(7, 7), stride=1, padding=3, residual=True),
-            Conv2d(32, 64, kernel_size=(7, 7), stride=1, padding=3, residual=True),
+            Conv2d(64, 64, kernel_size=3, stride=2, padding=1), #96x96
+            Conv2d(64, 64, kernel_size=(7, 7), stride=1, padding=3, residual=True),
+            Conv2d(64, 64, kernel_size=(7, 7), stride=1, padding=3, residual=True),
 
             Conv2d(64, 64, kernel_size=5, stride=(1, 2), padding=1), #94x47
             Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True), #94x47
             Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),#94x47
 
             Conv2d(64, 128, kernel_size=3, stride=2, padding=1), # 47x24
-            Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True), # 47x24
             Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True), # 47x24
             Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True), # 47x24
 
@@ -40,6 +39,7 @@ class TransformerSyncnet(nn.Module):
 
         self.audio_encoder = nn.Sequential(
             Conv2d(1, 64, kernel_size=3, stride=1, padding=1),
+            nn.Dropout(p=0.3),
             Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
 
@@ -64,13 +64,15 @@ class TransformerSyncnet(nn.Module):
             num_layers=num_encoder_layers
         )
 
-        self.fc = nn.Linear(277760, embed_size)
-
-        self.fc1 = nn.Linear(embed_size, 256)
-        self.fc2 = nn.Linear(256, num_classes)
+        self.fc1 = nn.Linear(1024, 256)
+        self.fc2 = nn.Linear(embed_size, num_classes)
         self.relu = nn.ReLU()
 
     def forward(self, face_embedding, audio_embedding):
+
+        face_embedding = self.face_encoder(face_embedding)
+        audio_embedding = self.audio_encoder(audio_embedding)
+
         # Adding a dummy dimension to match the transformer input requirements
         audio_embedding = audio_embedding.unsqueeze(1)
         face_embedding = face_embedding.unsqueeze(1)
@@ -87,18 +89,13 @@ class TransformerSyncnet(nn.Module):
         
         # Make sure combined is 1-dimensional
         combined = combined.view(combined.size(0), -1)
-        
-        combined = self.fc(combined)
+
+        combined = self.fc1(combined)
         
         # Pass through the Transformer encoder
         transformer_output = self.transformer_encoder(combined)
       
-        out = self.fc1(transformer_output)
-        out = self.relu(out)
+        out = self.relu(transformer_output)
         out = self.fc2(out)
-        #print('the output', out)
+        
         return out
-
-
-    
-

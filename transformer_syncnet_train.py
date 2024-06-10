@@ -54,7 +54,7 @@ global_epoch = 1
 use_cuda = torch.cuda.is_available()
 use_cosine_loss=True
 sample_mode='random'
-global_cache = multiprocessing.Manager().dict()
+image_cache = multiprocessing.Manager().dict()
 orig_mel_cache = multiprocessing.Manager().dict()
 
 current_training_loss = 0.6
@@ -75,8 +75,6 @@ class Dataset(object):
     def __init__(self, split, use_image_cache):
         print('A new dataset')
         self.all_videos = get_image_list(args.data_root, split)
-        self.image_cache = {}  # Initialize the cache
-        self.orig_mel_cache = {}
         self.file_exist_cache = {}       
         
 
@@ -129,7 +127,7 @@ class Dataset(object):
         Return the processed image data, audio features, and label.
         """
         
-        #print("image cache", len(image_cache))
+
         start_time = time.perf_counter()
         #print("working on", self.all_videos[idx])
         while 1:
@@ -202,8 +200,8 @@ class Dataset(object):
             all_read = True
             for fname in window_fnames:
                 #print('The image name ', fname)
-                if fname in global_cache:
-                    img = global_cache[fname]
+                if fname in image_cache:
+                    img = image_cache[fname]
                     #print('The image cache hit ', fname)
                 else:
                     img = cv2.imread(fname)
@@ -212,7 +210,7 @@ class Dataset(object):
                         break
                     try:
                         img = cv2.resize(img, (hparams.img_size, hparams.img_size))
-                        global_cache[fname] = img  # Cache the resized image
+                        image_cache[fname] = img  # Cache the resized image
                         
                     except Exception as e:
                         all_read = False
@@ -282,7 +280,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
           checkpoint_dir=None, checkpoint_interval=None, nepochs=None, should_print_grad_norm=False):
 
     
-    global global_step, global_epoch, consecutive_threshold_count, current_training_loss, image_cache
+    global global_step, global_epoch, consecutive_threshold_count, current_training_loss
     resumed_step = global_step
     print('start training data folder', train_data_loader)
     patience = 40

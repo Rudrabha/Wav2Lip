@@ -9,7 +9,7 @@ class Conv2d(nn.Module):
                             nn.Conv2d(cin, cout, kernel_size, stride, padding),
                             nn.BatchNorm2d(cout) # Eddy, looks like if the dataset is too small, it will cause error, see this link https://discuss.pytorch.org/t/error-expected-more-than-1-value-per-channel-when-training/26274
                             )
-        self.act = nn.ReLU(inplace=True)
+        self.act = nn.ReLU()
         self.residual = residual
 
     def forward(self, x):
@@ -37,7 +37,7 @@ class Conv2dTranspose(nn.Module):
                             nn.ConvTranspose2d(cin, cout, kernel_size, stride, padding, output_padding),
                             nn.BatchNorm2d(cout)
                             )
-        self.act = nn.ReLU(inplace=True)
+        self.act = nn.ReLU()
 
     def forward(self, x):
         out = self.conv_block(x)

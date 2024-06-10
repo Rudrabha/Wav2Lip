@@ -10,10 +10,10 @@ class TransformerSyncnet(nn.Module):
         self.face_encoder = nn.Sequential(
             # Added by eddy
             Conv2d(15, 64, kernel_size=(7, 7), stride=1, padding=3), #192x192
-            nn.Dropout(p=0.3),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=2),
             
             # End added
-            Conv2d(64, 64, kernel_size=3, stride=2, padding=1), #96x96
+            Conv2d(64, 64, kernel_size=3, stride=1, padding=1), #96x96
             Conv2d(64, 64, kernel_size=(7, 7), stride=1, padding=3, residual=True),
             Conv2d(64, 64, kernel_size=(7, 7), stride=1, padding=3, residual=True),
 
@@ -39,7 +39,7 @@ class TransformerSyncnet(nn.Module):
 
         self.audio_encoder = nn.Sequential(
             Conv2d(1, 64, kernel_size=3, stride=1, padding=1),
-            nn.Dropout(p=0.3),
+            
             Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
 
@@ -65,8 +65,10 @@ class TransformerSyncnet(nn.Module):
         )
 
         self.fc1 = nn.Linear(1024, 256)
-        self.fc2 = nn.Linear(embed_size, num_classes)
+        self.fc2 = nn.Linear(embed_size, 128)
+        self.fc3 = nn.Linear(128, num_classes)
         self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(p=0.2)
 
     def forward(self, face_embedding, audio_embedding):
 
@@ -90,12 +92,20 @@ class TransformerSyncnet(nn.Module):
         # Make sure combined is 1-dimensional
         combined = combined.view(combined.size(0), -1)
 
+        # The embedding size is 1024, fc1 will reduce it to 256
         combined = self.fc1(combined)
+        combined = self.relu(combined)
         
         # Pass through the Transformer encoder
         transformer_output = self.transformer_encoder(combined)
-      
         out = self.relu(transformer_output)
+
+        # The output from the transformer should be 256, add a dropout layer to drop 0.2, then further reduce to 128 classes
+        out = self.dropout(out)
         out = self.fc2(out)
+        out = self.relu(out)
+        
+        # Further reduce to 2 classes
+        out = self.fc3(out)
         
         return out

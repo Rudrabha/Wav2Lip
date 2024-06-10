@@ -22,6 +22,8 @@ from models.conv import Conv2d, Conv2dTranspose
 # import module 
 import traceback
 import wandb
+import time
+import multiprocessing
 
 from PIL import Image
 
@@ -52,6 +54,8 @@ global_epoch = 1
 use_cuda = torch.cuda.is_available()
 use_cosine_loss=True
 sample_mode='random'
+global_cache = multiprocessing.Manager().dict()
+orig_mel_cache = multiprocessing.Manager().dict()
 
 current_training_loss = 0.6
 learning_step_loss_threshhold = 0.3
@@ -69,25 +73,11 @@ syncnet_mel_step_size = 16
 
 class Dataset(object):
     def __init__(self, split, use_image_cache):
+        print('A new dataset')
         self.all_videos = get_image_list(args.data_root, split)
         self.image_cache = {}  # Initialize the cache
-        self.audio_cache = {}
         self.orig_mel_cache = {}
-        self.file_exist_cache = {}
-        self.use_image_cache = use_image_cache
-        if use_image_cache:
-          for vidname in self.all_videos:
-              img_names = list(glob(join(vidname, '*.jpg')))
-              for fname in img_names:
-                  img = cv2.imread(fname)
-                  if img is None:
-                    break
-                  try:
-                    img = cv2.resize(img, (hparams.img_size, hparams.img_size))
-                    self.image_cache[fname] = img  # Cache the resized image
-                  except Exception as e:
-                    break
-        
+        self.file_exist_cache = {}       
         
 
     def get_frame_id(self, frame):
@@ -138,6 +128,9 @@ class Dataset(object):
         Handle exceptions and retries in case of read errors.
         Return the processed image data, audio features, and label.
         """
+        
+        #print("image cache", len(image_cache))
+        start_time = time.perf_counter()
         #print("working on", self.all_videos[idx])
         while 1:
             #idx = random.randint(0, len(self.all_videos) - 1)
@@ -209,8 +202,8 @@ class Dataset(object):
             all_read = True
             for fname in window_fnames:
                 #print('The image name ', fname)
-                if fname in self.image_cache:
-                    img = self.image_cache[fname]
+                if fname in global_cache:
+                    img = global_cache[fname]
                     #print('The image cache hit ', fname)
                 else:
                     img = cv2.imread(fname)
@@ -219,7 +212,8 @@ class Dataset(object):
                         break
                     try:
                         img = cv2.resize(img, (hparams.img_size, hparams.img_size))
-                        self.image_cache[fname] = img  # Cache the resized image
+                        global_cache[fname] = img  # Cache the resized image
+                        
                     except Exception as e:
                         all_read = False
                         break
@@ -231,13 +225,13 @@ class Dataset(object):
             try:
                 wavpath = join(vidname, "audio.wav")
 
-                if wavpath in self.audio_cache:
-                    orig_mel = self.orig_mel_cache[wavpath]
-                    #print('The audio cache hit ', fname)
+                if wavpath in orig_mel_cache:
+                    orig_mel = orig_mel_cache[wavpath]
+                    #print('The audio cache hit ', wavpath)
                 else:
                     wav = audio.load_wav(wavpath, hparams.sample_rate)
                     orig_mel = audio.melspectrogram(wav).T
-                    self.orig_mel_cache[wavpath] = orig_mel
+                    orig_mel_cache[wavpath] = orig_mel
                 
             except Exception as e:
                 print('error', e)
@@ -247,6 +241,7 @@ class Dataset(object):
             mel = self.crop_audio_window(orig_mel.copy(), img_name)
 
             if (mel.shape[0] != syncnet_mel_step_size):
+                print('The mel shape is {}, but it should be {} and start num is {}'.format(mel.shape[0], syncnet_mel_step_size, img_name))
                 continue
             
             # Save the sample images
@@ -264,6 +259,10 @@ class Dataset(object):
             x = torch.FloatTensor(x)
             mel = torch.FloatTensor(mel.T).unsqueeze(0)
 
+            end_time = time.perf_counter()
+            execution_time = (end_time - start_time) * 1000  # Convert seconds to milliseconds
+            #print(f"The method took {execution_time:.2f} milliseconds to execute.")
+
             return x, mel, y
 
 
@@ -273,7 +272,7 @@ cross_entropy_loss = nn.CrossEntropyLoss()
 # Register hooks to print gradient norms
 def print_grad_norm(module, grad_input, grad_output):
     for i, grad in enumerate(grad_output):
-        if grad is not None and global_step % 100 == 0:
+        if grad is not None and global_step % hparams.syncnet_eval_interval == 0:
             print(f'{module.__class__.__name__} - grad_output[{i}] norm: {grad.norm().item()}')
 
 # end added by eddy
@@ -283,7 +282,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
           checkpoint_dir=None, checkpoint_interval=None, nepochs=None, should_print_grad_norm=False):
 
     
-    global global_step, global_epoch, consecutive_threshold_count, current_training_loss
+    global global_step, global_epoch, consecutive_threshold_count, current_training_loss, image_cache
     resumed_step = global_step
     print('start training data folder', train_data_loader)
     patience = 40
@@ -459,8 +458,8 @@ def load_checkpoint(path, model, optimizer, reset_optimizer=False):
     global_epoch = checkpoint["global_epoch"]
 
     # Reset the new learning rate
-    # for param_group in optimizer.param_groups:
-    #     param_group['lr'] = 0.0001
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = 0.000001
 
     return model
 

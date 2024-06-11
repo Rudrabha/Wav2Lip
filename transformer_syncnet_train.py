@@ -239,7 +239,7 @@ class Dataset(object):
             mel = self.crop_audio_window(orig_mel.copy(), img_name)
 
             if (mel.shape[0] != syncnet_mel_step_size):
-                print('The mel shape is {}, but it should be {} and start num is {}'.format(mel.shape[0], syncnet_mel_step_size, img_name))
+                #print('The mel shape is {}, but it should be {} and start num is {}'.format(mel.shape[0], syncnet_mel_step_size, img_name))
                 continue
             
             # Save the sample images

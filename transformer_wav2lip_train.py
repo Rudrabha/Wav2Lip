@@ -246,18 +246,20 @@ def contrastive_loss(a, v, y, margin=0.5):
     return loss
 
 device = torch.device("cuda" if use_cuda else "cpu")
-syncnet = SyncNet().to(device)
+syncnet = SyncNet(embed_size=256, num_heads=8, num_encoder_layers=6).to(device)
 for p in syncnet.parameters():
     p.requires_grad = False
 
+
+cross_entropy_loss = nn.CrossEntropyLoss()
 recon_loss = nn.L1Loss()
 def get_sync_loss(mel, g):
     g = g[:, :, :, g.size(3)//2:]
     g = torch.cat([g[:, :, i] for i in range(syncnet_T)], dim=1)
     # B, 3 * T, H//2, W
-    a, v = syncnet(mel, g)
-    y = torch.ones(g.size(0), 1).float().to(device)
-    return cosine_loss(a, v, y) if use_cosine_loss else contrastive_loss(a, v, y)
+    output = syncnet(g, mel)
+    y = torch.ones(g.size(0), dtype=torch.long).to(device) 
+    return cross_entropy_loss(output, y)
 
 def print_grad_norm(module, grad_input, grad_output):
     for i, grad in enumerate(grad_output):
@@ -374,8 +376,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
                        "train/learning_rate": current_lr}
             
               wandb.log({**metrics})
-            else:
-                print("skipping unsacturated batch", global_epoch)
+
         global_epoch += 1
         
 
@@ -398,6 +399,7 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, sch
               g = model(indiv_mels, x)
 
               sync_loss = get_sync_loss(mel, g)
+              
               l1loss = recon_loss(g, gt)
 
               sync_losses.append(sync_loss.item())
@@ -412,8 +414,7 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, sch
 
               if step > eval_steps: 
                 return averaged_sync_loss
-            else:
-              print("skipping step", step)    
+            
 
 def save_checkpoint(model, optimizer, step, checkpoint_dir, epoch):
 

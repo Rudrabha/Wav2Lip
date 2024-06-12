@@ -120,11 +120,11 @@ class Wav2Lip(nn.Module):
 
         audio_embedding = self.audio_encoder(audio_sequences) # B, 512, 1, 1
 
-        feats = []
-        x = face_sequences
+        face_features = []
+        this_face_sequence = face_sequences
         for f in self.face_encoder_blocks:
-            x = f(x)
-            feats.append(x)
+            this_face_sequence = f(this_face_sequence)
+            face_features.append(this_face_sequence)
 
         x = audio_embedding
         index = 1
@@ -134,12 +134,16 @@ class Wav2Lip(nn.Module):
             index += 1
 
             try:
-                x = torch.cat((x, feats[-1]), dim=1)
+                x = torch.cat((x, face_features[-1]), dim=1)
             except Exception as e:
                 raise e
             
-            feats.pop()
+            face_features.pop()
             #print('The new length', len(feats))
+
+        '''
+        Eddy: We might want to use a transformer to learn the combined audio and face features rather than the current output_block
+        '''
 
         x = self.output_block(x)
 

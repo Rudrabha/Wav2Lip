@@ -22,6 +22,7 @@ from hparams import hparams, get_image_list
 
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from models.conv import Conv2d, Conv2dTranspose
+import time
 import multiprocessing
 
 
@@ -157,6 +158,7 @@ class Dataset(object):
         return len(self.all_videos)
 
     def __getitem__(self, idx):
+        start_time = time.perf_counter()
         while 1:
             idx = random.randint(0, len(self.all_videos) - 1)
             vidname = self.all_videos[idx]
@@ -215,6 +217,10 @@ class Dataset(object):
             mel = torch.FloatTensor(mel.T).unsqueeze(0)
             indiv_mels = torch.FloatTensor(indiv_mels).unsqueeze(1)
             y = torch.FloatTensor(y)
+            end_time = time.perf_counter()
+            execution_time = (end_time - start_time) * 1000  # Convert seconds to milliseconds
+            print(f"The method took {execution_time:.2f} milliseconds to execute.")
+
             return x, indiv_mels, mel, y
 
 def save_sample_images(x, g, gt, global_step, checkpoint_dir):

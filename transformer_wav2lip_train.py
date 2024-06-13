@@ -94,7 +94,8 @@ class Dataset(object):
                         break
                     try:
                         img = cv2.resize(img, (hparams.img_size, hparams.img_size))
-                        image_cache[fname] = img  # Cache the resized image
+                        if len(image_cache) < 180000:
+                          image_cache[fname] = img  # Cache the resized image and preevent OOM
                         
                     except Exception as e:
                         break
@@ -158,7 +159,7 @@ class Dataset(object):
         return len(self.all_videos)
 
     def __getitem__(self, idx):
-        start_time = time.perf_counter()
+        #start_time = time.perf_counter()
         while 1:
             idx = random.randint(0, len(self.all_videos) - 1)
             vidname = self.all_videos[idx]
@@ -217,9 +218,9 @@ class Dataset(object):
             mel = torch.FloatTensor(mel.T).unsqueeze(0)
             indiv_mels = torch.FloatTensor(indiv_mels).unsqueeze(1)
             y = torch.FloatTensor(y)
-            end_time = time.perf_counter()
-            execution_time = (end_time - start_time) * 1000  # Convert seconds to milliseconds
-            print(f"The method took {execution_time:.2f} milliseconds to execute.")
+            # end_time = time.perf_counter()
+            # execution_time = (end_time - start_time) * 1000  # Convert seconds to milliseconds
+            # print(f"The method took {execution_time:.2f} milliseconds to execute.")
 
             return x, indiv_mels, mel, y
 
@@ -335,7 +336,11 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
                   sync_loss = 0.
 
               l1loss = recon_loss(g, gt)
-
+              
+              '''
+              If the syncnet_wt is 0.03, it means the sync_loss has 3% of the loss wheras l1loss occupy 97% of the loss, 
+              this loss indicate that we want the l1loss to be more important
+              '''
               loss = hparams.syncnet_wt * sync_loss + (1 - hparams.syncnet_wt) * l1loss
               loss.backward()
               optimizer.step()

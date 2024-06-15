@@ -5,8 +5,8 @@ import math
 
 from .conv import Conv2dTranspose, Conv2d, nonorm_Conv2d
 
-class Wav2Lip(nn.Module):
-    def __init__(self):
+class TransformerWav2Lip(nn.Module):
+    def __init__(self, embed_size, num_heads, num_encoder_layers, dropout=0.1):
         super(Wav2Lip, self).__init__()
 
         self.face_encoder_blocks = nn.ModuleList([
@@ -104,10 +104,29 @@ class Wav2Lip(nn.Module):
             )
             # end add by eddy
             ]) 
+        
+        self.transformer_encoder = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(d_model=embed_size, nhead=num_heads, dropout=dropout),
+            num_layers=num_encoder_layers
+        )
 
-        self.output_block = nn.Sequential(Conv2d(96, 32, kernel_size=3, stride=1, padding=1),
-            nn.Conv2d(32, 3, kernel_size=1, stride=1, padding=0),
-            nn.Sigmoid())
+        self.fc1 = nn.Linear(1024, 256)
+        self.relu = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
+
+        self.output_block = nn.Sequential(
+            Conv2d(96, 64, kernel_size=3, stride=1, padding=1),
+            Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
+            Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
+
+            Conv2d(64, 64, kernel_size=3, stride=1, padding=1),            
+            Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
+            Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
+
+            Conv2d(64, 32, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(32, 3, kernel_size=3, stride=1, padding=1),
+            nn.Sigmoid()
+        )
 
     def forward(self, audio_sequences, face_sequences):
         # audio_sequences = (B, T, 1, 80, 16)
@@ -146,9 +165,14 @@ class Wav2Lip(nn.Module):
         Eddy: We might want to use a transformer to learn the combined audio and face features rather than using the concatenation 
         of the decoded audio and face features
         '''
-        
-        # x is the combined audio and face features
-        x = self.output_block(x)
+
+        x = x.view(x.size(0), -1)
+
+        # do some transformer learning
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.transformer_encoder(x)
+        x = self.sigmoid(x)
 
         if input_dim_size > 4:
             x = torch.split(x, B, dim=0) # [(B, C, H, W)]

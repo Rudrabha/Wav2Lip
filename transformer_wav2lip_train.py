@@ -14,6 +14,8 @@ from torch import optim
 import torch.backends.cudnn as cudnn
 from torch.utils import data as data_utils
 import numpy as np
+import torchvision.models as models
+
 
 from glob import glob
 
@@ -94,7 +96,7 @@ class Dataset(object):
                         break
                     try:
                         img = cv2.resize(img, (hparams.img_size, hparams.img_size))
-                        if len(image_cache) < 180000:
+                        if len(image_cache) < 300000:
                           image_cache[fname] = img  # Cache the resized image and preevent OOM
                         
                     except Exception as e:
@@ -268,6 +270,9 @@ def get_sync_loss(mel, g):
     y = torch.ones(g.size(0), dtype=torch.long).to(device) 
     return cross_entropy_loss(output, y)
 
+def perceptual_loss(gen_features, gt_features):
+    return nn.functional.mse_loss(gen_features, gt_features)
+
 def print_grad_norm(module, grad_input, grad_output):
     for i, grad in enumerate(grad_output):
         if grad is not None and global_step % 1000 == 0:
@@ -285,7 +290,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     global global_step, global_epoch
     resumed_step = global_step
 
-    patience = 20
+    patience = 50
 
     current_lr = get_current_lr(optimizer)
     print('The learning rate is: {0}'.format(current_lr))
@@ -310,11 +315,13 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
       for name, module in model.named_modules():
         if isinstance(module, (Conv2d, Conv2dTranspose, nn.Linear)):
             module.register_backward_hook(print_grad_norm)
- 
+
+    vgg = models.vgg16(pretrained=True).features
+
     while global_epoch < nepochs:
         current_lr = get_current_lr(optimizer)
         #print('Starting Epoch: {}'.format(global_epoch))
-        running_sync_loss, running_l1_loss = 0., 0.
+        running_sync_loss, running_l1_loss, running_l2_loss = 0., 0., 0.
         prog_bar = tqdm(enumerate(train_data_loader))
         for step, (x, indiv_mels, mel, gt) in prog_bar:
             #print("The batch size", x.shape)
@@ -336,12 +343,14 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
                   sync_loss = 0.
 
               l1loss = recon_loss(g, gt)
-              
+
+              l2loss = nn.functional.mse_loss(g, gt)
+
               '''
               If the syncnet_wt is 0.03, it means the sync_loss has 3% of the loss wheras l1loss occupy 97% of the loss, 
               this loss indicate that we want the l1loss to be more important
               '''
-              loss = hparams.syncnet_wt * sync_loss + (1 - hparams.syncnet_wt) * l1loss
+              loss = hparams.syncnet_wt * sync_loss + (1 - hparams.syncnet_wt) * l1loss + l2loss
               loss.backward()
               optimizer.step()
 
@@ -352,6 +361,8 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
               cur_session_steps = global_step - resumed_step
 
               running_l1_loss += l1loss.item()
+              running_l2_loss += l2loss.item()
+
               if hparams.syncnet_wt > 0.:
                   running_sync_loss += sync_loss.item()
               else:
@@ -377,10 +388,10 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
                       if average_sync_loss < .65: # change 
                           hparams.set_hparam('syncnet_wt', 0.03) # without image GAN a lesser weight is sufficient
 
-              prog_bar.set_description('Epoch: {}, L1: {}, Sync Loss: {}, LR: {}, Total Loss: {}'.format(global_epoch, running_l1_loss / (step + 1),
+              prog_bar.set_description('Epoch: {}, L1L2: {}, Sync Loss: {}, LR: {}, Total Loss: {}'.format(global_epoch, (running_l1_loss + running_l2_loss) / (step + 1),
                                                                       running_sync_loss / (step + 1), current_lr, loss.item()))
               
-              metrics = {"train/l1_loss": running_l1_loss / (step + 1), 
+              metrics = {"train/l1_loss": (running_l1_loss + running_l2_loss) / (step + 1), 
                        "train/sync_loss": running_sync_loss / (step + 1), 
                        "train/epoch": global_epoch,
                        "train/overall_loss": loss.item(),
@@ -468,6 +479,10 @@ def load_checkpoint(path, model, optimizer, reset_optimizer=False, overwrite_glo
     if overwrite_global_states:
         global_step = checkpoint["global_step"]
         global_epoch = checkpoint["global_epoch"]
+
+    if optimizer != None:
+      for param_group in optimizer.param_groups:
+        param_group['lr'] = 0.00001
 
     return model
 

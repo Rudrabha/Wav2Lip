@@ -66,8 +66,12 @@ class TransformerWav2Lip(nn.Module):
             Conv2d(128, 256, kernel_size=3, stride=(3, 2), padding=1),
             Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True),
 
-            Conv2d(256, 512, kernel_size=3, stride=1, padding=0),
-            Conv2d(512, 512, kernel_size=1, stride=1, padding=0),
+            Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
+            Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True),
+            Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True),
+
+            Conv2d(512, 1024, kernel_size=3, stride=1, padding=0),
+            Conv2d(1024, 1024, kernel_size=1, stride=1, padding=0)
             )
 
         self.face_decoder_blocks = nn.ModuleList([

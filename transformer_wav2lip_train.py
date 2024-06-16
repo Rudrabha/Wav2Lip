@@ -96,7 +96,7 @@ class Dataset(object):
                         break
                     try:
                         img = cv2.resize(img, (hparams.img_size, hparams.img_size))
-                        if len(image_cache) < 300000:
+                        if len(image_cache) < 350000:
                           image_cache[fname] = img  # Cache the resized image and preevent OOM
                         
                     except Exception as e:
@@ -295,19 +295,6 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     current_lr = get_current_lr(optimizer)
     print('The learning rate is: {0}'.format(current_lr))
 
-    wandb.init(
-      # set the wandb project where this run will be logged
-      project="my-wav2lip",
-
-      # track hyperparameters and run metadata
-      config={
-      "learning_rate": current_lr,
-      "architecture": "Wav2lip",
-      "dataset": "MyOwn",
-      "epochs": 200000,
-      }
-    )
-
     # Added by eddy
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.7, patience=patience, verbose=True)
 
@@ -374,22 +361,22 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
 
               if global_step == 1:
                   with torch.no_grad():
-                      average_sync_loss = eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler, 10)
+                      eval_loss = eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler, 10)
 
-                      if average_sync_loss < .75:
+                      if eval_loss < .75:
                           hparams.set_hparam('syncnet_wt', 0.03) # without image GAN a lesser weight is sufficient
 
               else:
                 if global_step % hparams.eval_interval == 0:
                   with torch.no_grad():
-                      average_sync_loss = eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler, 20)
+                      eval_loss = eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler, 20)
 
                       #if average_sync_loss < .75:
-                      if average_sync_loss < .65: # change 
+                      if eval_loss < .65: # change 
                           hparams.set_hparam('syncnet_wt', 0.03) # without image GAN a lesser weight is sufficient
 
-              prog_bar.set_description('Epoch: {}, L1L2: {}, Sync Loss: {}, LR: {}, Total Loss: {}'.format(global_epoch, (running_l1_loss + running_l2_loss) / (step + 1),
-                                                                      running_sync_loss / (step + 1), current_lr, loss.item()))
+              prog_bar.set_description('Epoch: {}, L1L2: {}, Sync Loss: {}, Eval Sync Loss: {}, LR: {}, Total Loss: {}'.format(global_epoch, (running_l1_loss + running_l2_loss) / (step + 1),
+                                                                      running_sync_loss / (step + 1), eval_loss, current_lr, loss.item()))
               
               metrics = {"train/l1_loss": (running_l1_loss + running_l2_loss) / (step + 1), 
                        "train/sync_loss": running_sync_loss / (step + 1), 
@@ -431,6 +418,13 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, sch
               averaged_recon_loss = sum(recon_losses) / len(recon_losses)
 
               print('Eval Loss, L1: {}, Sync loss: {}'.format(averaged_recon_loss, averaged_sync_loss))
+
+              metrics = {"val/l1_loss": averaged_recon_loss, 
+                       "val/sync_loss": averaged_sync_loss, 
+                       "val/epoch": global_epoch,
+                       }
+            
+              wandb.log({**metrics})
 
               scheduler.step(averaged_sync_loss + averaged_recon_loss)
 
@@ -518,6 +512,19 @@ if __name__ == "__main__":
 
     if not os.path.exists(checkpoint_dir):
         os.mkdir(checkpoint_dir)
+
+    wandb.init(
+      # set the wandb project where this run will be logged
+      project="my-wav2lip",
+
+      # track hyperparameters and run metadata
+      config={
+      "learning_rate": hparams.initial_learning_rate,
+      "architecture": "Wav2lip",
+      "dataset": "MyOwn",
+      "epochs": 200000,
+      }
+    )
 
     # Train!
     train(device, model, train_data_loader, test_data_loader, optimizer,

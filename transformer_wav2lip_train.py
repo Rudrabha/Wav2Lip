@@ -359,26 +359,20 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
                   save_checkpoint(
                       model, optimizer, global_step, checkpoint_dir, global_epoch)
 
-              if global_step == 1:
-                  with torch.no_grad():
-                      eval_loss = eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler, 10)
+              avg_l1l2_loss = (running_l1_loss + running_l2_loss) / (step + 1)
+              
+              if global_step % hparams.eval_interval == 0:
+                with torch.no_grad():
+                  eval_loss = eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler, 20)
 
-                      if eval_loss < .75:
-                          hparams.set_hparam('syncnet_wt', 0.03) # without image GAN a lesser weight is sufficient
+                  #if average_sync_loss < .75:
+                  if avg_l1l2_loss < .015: # change 
+                          hparams.set_hparam('syncnet_wt', 0.01) # without image GAN a lesser weight is sufficient
 
-              else:
-                if global_step % hparams.eval_interval == 0:
-                  with torch.no_grad():
-                      eval_loss = eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler, 20)
-
-                      #if average_sync_loss < .75:
-                      if eval_loss < .65: # change 
-                          hparams.set_hparam('syncnet_wt', 0.03) # without image GAN a lesser weight is sufficient
-
-              prog_bar.set_description('Epoch: {}, L1L2: {}, Sync Loss: {}, Eval Sync Loss: {}, LR: {}, Total Loss: {}'.format(global_epoch, (running_l1_loss + running_l2_loss) / (step + 1),
+              prog_bar.set_description('Epoch: {}, L1L2: {}, Sync Loss: {}, Eval Sync Loss: {}, LR: {}, Total Loss: {}'.format(global_epoch, avg_l1l2_loss,
                                                                       running_sync_loss / (step + 1), eval_loss, current_lr, loss.item()))
               
-              metrics = {"train/l1_loss": (running_l1_loss + running_l2_loss) / (step + 1), 
+              metrics = {"train/l1_loss": avg_l1l2_loss, 
                        "train/sync_loss": running_sync_loss / (step + 1), 
                        "train/epoch": global_epoch,
                        "train/overall_loss": loss.item(),

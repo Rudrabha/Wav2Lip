@@ -304,6 +304,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             module.register_backward_hook(print_grad_norm)
 
     vgg = models.vgg16(pretrained=True).features
+    eval_loss = 0.0
 
     while global_epoch < nepochs:
         current_lr = get_current_lr(optimizer)

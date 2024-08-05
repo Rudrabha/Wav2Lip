@@ -212,7 +212,8 @@ class Dataset(object):
                         break
                     try:
                         img = cv2.resize(img, (hparams.img_size, hparams.img_size))
-                        image_cache[fname] = img  # Cache the resized image
+                        if len(image_cache) < 350000:
+                          image_cache[fname] = img  # Cache the resized image
                         
                     except Exception as e:
                         all_read = False

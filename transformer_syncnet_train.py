@@ -127,11 +127,25 @@ class Dataset(object):
         Return the processed image data, audio features, and label.
         """
 
+        circuit_breaker_counter = 0
+        previous_vid = ""
+
         start_time = time.perf_counter()
         #print("working on", self.all_videos[idx])
         while 1:
             #idx = random.randint(0, len(self.all_videos) - 1)
             vidname = self.all_videos[idx]
+
+            if vidname == previous_vid:
+                circuit_breaker_counter += 1
+
+            previous_vid = vidname
+
+            # FPS is 25, a video with length of 3 minutes might have 25 * 180 = 4500, i think we can just break for this case
+            if circuit_breaker_counter > 4500:
+                print('Circuit breaker in, the problem video is ', vidname)
+                circuit_breaker_counter = 0
+                continue
 
             img_names = list(glob(join(vidname, '*.jpg')))
             

@@ -2,7 +2,7 @@ from os.path import dirname, join, basename, isfile
 from tqdm import tqdm
 
 from models import TransformerSyncnet as SyncNet
-from models import Wav2Lip as Wav2Lip
+from models import TransformerWav2Lip as Wav2Lip
 import audio
 
 import torch
@@ -198,35 +198,45 @@ class Dataset(object):
                     orig_mel = audio.melspectrogram(wav).T
                     orig_mel_cache[wavpath] = orig_mel
 
-            except Exception as e:
-                continue
-
-            mel = self.crop_audio_window(orig_mel.copy(), img_name)
             
-            if (mel.shape[0] != syncnet_mel_step_size):
+
+                mel = self.crop_audio_window(orig_mel.copy(), img_name)
+                
+                if (mel.shape[0] != syncnet_mel_step_size):
+                    continue
+
+                indiv_mels = self.get_segmented_mels(orig_mel.copy(), img_name)
+                if indiv_mels is None: continue
+
+                window = self.prepare_window(window)
+                y = window.copy()
+                window[:, :, window.shape[2]//2:] = 0.
+
+                wrong_window = self.prepare_window(wrong_window)
+
+                x = np.concatenate([window, wrong_window], axis=0)
+
+                x = torch.FloatTensor(x)
+                mel = torch.FloatTensor(mel.T).unsqueeze(0)
+                indiv_mels = torch.FloatTensor(indiv_mels).unsqueeze(1)
+                y = torch.FloatTensor(y)
+                # end_time = time.perf_counter()
+                # execution_time = (end_time - start_time) * 1000  # Convert seconds to milliseconds
+                # print(f"The method took {execution_time:.2f} milliseconds to execute.")
+
+                return x, indiv_mels, mel, y
+
+            except Exception as e:
+                print('An error has occured', vidname, img_name, wrong_img_name)
                 continue
-
-            indiv_mels = self.get_segmented_mels(orig_mel.copy(), img_name)
-            if indiv_mels is None: continue
-
-            window = self.prepare_window(window)
-            y = window.copy()
-            window[:, :, window.shape[2]//2:] = 0.
-
-            wrong_window = self.prepare_window(wrong_window)
-            x = np.concatenate([window, wrong_window], axis=0)
-
-            x = torch.FloatTensor(x)
-            mel = torch.FloatTensor(mel.T).unsqueeze(0)
-            indiv_mels = torch.FloatTensor(indiv_mels).unsqueeze(1)
-            y = torch.FloatTensor(y)
-            # end_time = time.perf_counter()
-            # execution_time = (end_time - start_time) * 1000  # Convert seconds to milliseconds
-            # print(f"The method took {execution_time:.2f} milliseconds to execute.")
-
-            return x, indiv_mels, mel, y
 
 def save_sample_images(x, g, gt, global_step, checkpoint_dir):
+    '''
+    refs: Reference images (extracted from the input x with channels 3 onward).
+    inps: Input images (extracted from the input x with the first 3 channels).
+    g: Generated images by the model.
+    gt: Ground truth images.
+    '''
     x = (x.detach().cpu().numpy().transpose(0, 2, 3, 4, 1) * 255.).astype(np.uint8)
     g = (g.detach().cpu().numpy().transpose(0, 2, 3, 4, 1) * 255.).astype(np.uint8)
     gt = (gt.detach().cpu().numpy().transpose(0, 2, 3, 4, 1) * 255.).astype(np.uint8)
@@ -303,7 +313,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
         if isinstance(module, (Conv2d, Conv2dTranspose, nn.Linear)):
             module.register_backward_hook(print_grad_norm)
 
-    vgg = models.vgg16(pretrained=True).features
+    
     eval_loss = 0.0
 
     while global_epoch < nepochs:
@@ -494,7 +504,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # Model
-    model = Wav2Lip().to(device)
+    model = Wav2Lip(embed_size=256, num_heads=8, num_encoder_layers=6).to(device)
     print('total trainable params {}'.format(sum(p.numel() for p in model.parameters() if p.requires_grad)))
 
     optimizer = optim.Adam([p for p in model.parameters() if p.requires_grad],

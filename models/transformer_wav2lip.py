@@ -7,7 +7,7 @@ from .conv import Conv2dTranspose, Conv2d, nonorm_Conv2d
 
 class TransformerWav2Lip(nn.Module):
     def __init__(self, embed_size, num_heads, num_encoder_layers, dropout=0.1):
-        super(Wav2Lip, self).__init__()
+        super(TransformerWav2Lip, self).__init__()
 
         self.face_encoder_blocks = nn.ModuleList([
             # add by eddy to support 192x192 input
@@ -75,20 +75,20 @@ class TransformerWav2Lip(nn.Module):
             )
 
         self.face_decoder_blocks = nn.ModuleList([
-            nn.Sequential(Conv2d(512, 512, kernel_size=1, stride=1, padding=0),),
+            nn.Sequential(Conv2d(1024, 1024, kernel_size=1, stride=1, padding=0),),
 
-            nn.Sequential(Conv2dTranspose(1024, 512, kernel_size=3, stride=1, padding=0), # 3,3
-            Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True),),
+            nn.Sequential(Conv2dTranspose(1536, 768, kernel_size=3, stride=1, padding=0), # 3,3
+            Conv2d(768, 768, kernel_size=3, stride=1, padding=1, residual=True),),
 
-            nn.Sequential(Conv2dTranspose(1024, 512, kernel_size=3, stride=2, padding=1, output_padding=1),
+            nn.Sequential(Conv2dTranspose(1280, 640, kernel_size=3, stride=2, padding=1, output_padding=1),
+            Conv2d(640, 640, kernel_size=3, stride=1, padding=1, residual=True),
+            Conv2d(640, 640, kernel_size=3, stride=1, padding=1, residual=True),), # 6, 6
+
+            nn.Sequential(Conv2dTranspose(896, 512, kernel_size=3, stride=2, padding=1, output_padding=1),
             Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True),
-            Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True),), # 6, 6
+            Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True),), # 12, 12
 
-            nn.Sequential(Conv2dTranspose(768, 384, kernel_size=3, stride=2, padding=1, output_padding=1),
-            Conv2d(384, 384, kernel_size=3, stride=1, padding=1, residual=True),
-            Conv2d(384, 384, kernel_size=3, stride=1, padding=1, residual=True),), # 12, 12
-
-            nn.Sequential(Conv2dTranspose(512, 256, kernel_size=3, stride=2, padding=1, output_padding=1),
+            nn.Sequential(Conv2dTranspose(640, 256, kernel_size=3, stride=2, padding=1, output_padding=1),
             Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True),), # 24, 24
 

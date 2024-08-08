@@ -295,7 +295,7 @@ def get_current_lr(optimizer):
         return param_group['lr']
 
 def train(device, model, train_data_loader, test_data_loader, optimizer,
-          checkpoint_dir=None, checkpoint_interval=None, nepochs=None, should_print_grad_norm=True):
+          checkpoint_dir=None, checkpoint_interval=None, nepochs=None, should_print_grad_norm=False):
 
     global global_step, global_epoch
     resumed_step = global_step

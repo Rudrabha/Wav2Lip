@@ -2,7 +2,7 @@ from os.path import dirname, join, basename, isfile
 from tqdm import tqdm
 
 from models import TransformerSyncnet as SyncNet
-from models import TransformerWav2Lip as Wav2Lip
+from models import Wav2Lip as Wav2Lip
 import audio
 
 import torch
@@ -504,7 +504,8 @@ if __name__ == "__main__":
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # Model
-    model = Wav2Lip(embed_size=256, num_heads=8, num_encoder_layers=6).to(device)
+    #model = Wav2Lip(embed_size=256, num_heads=8, num_encoder_layers=6).to(device)
+    model = Wav2Lip().to(device)
     print('total trainable params {}'.format(sum(p.numel() for p in model.parameters() if p.requires_grad)))
 
     optimizer = optim.Adam([p for p in model.parameters() if p.requires_grad],

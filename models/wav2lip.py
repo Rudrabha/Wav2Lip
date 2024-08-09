@@ -79,28 +79,35 @@ class Wav2Lip(nn.Module):
             )
 
         self.face_decoder_blocks = nn.ModuleList([
-            nn.Sequential(Conv2d(1024, 1024, kernel_size=1, stride=1, padding=0),),
+            nn.Sequential(Conv2d(1024, 1024, kernel_size=1, stride=1, padding=0),
+                          Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1, residual=True),
+                          Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1, residual=True),),
 
             nn.Sequential(Conv2dTranspose(1536, 768, kernel_size=3, stride=1, padding=0), # 3,3
+            Conv2d(768, 768, kernel_size=3, stride=1, padding=1, residual=True),
+            Conv2d(768, 768, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(768, 768, kernel_size=3, stride=1, padding=1, residual=True),),
 
             nn.Sequential(Conv2dTranspose(1280, 640, kernel_size=3, stride=2, padding=1, output_padding=1),
             Conv2d(640, 640, kernel_size=3, stride=1, padding=1, residual=True),
+            Conv2d(640, 640, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(640, 640, kernel_size=3, stride=1, padding=1, residual=True),), # 6, 6
 
-            nn.Sequential(Conv2dTranspose(896, 512, kernel_size=3, stride=2, padding=1, output_padding=1),
+            nn.Sequential(Conv2dTranspose(1152, 512, kernel_size=3, stride=2, padding=1, output_padding=1),
+            Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True),), # 12, 12
 
-            nn.Sequential(Conv2dTranspose(640, 256, kernel_size=3, stride=2, padding=1, output_padding=1),
+            nn.Sequential(Conv2dTranspose(768, 256, kernel_size=3, stride=2, padding=1, output_padding=1),
+            Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True),), # 24, 24
 
-            nn.Sequential(Conv2dTranspose(320, 128, kernel_size=3, stride=2, padding=1, output_padding=1), 
+            nn.Sequential(Conv2dTranspose(384, 128, kernel_size=3, stride=2, padding=1, output_padding=1), 
             Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True),), # 48, 48
 
-            nn.Sequential(Conv2dTranspose(192, 64, kernel_size=3, stride=2, padding=1, output_padding=1),
+            nn.Sequential(Conv2dTranspose(256, 64, kernel_size=3, stride=2, padding=1, output_padding=1),
             Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),), # 96,96
 
@@ -142,7 +149,10 @@ class Wav2Lip(nn.Module):
             index += 1
 
             try:
-                # Concat the decoded audio with the correspondent face features
+                '''
+                Concat the decoded audio with the correspondent face features, 
+                this also known as skip connection by concatinationg the encoder's face feature and decoded audio features
+                '''
                 x = torch.cat((x, face_features[-1]), dim=1)
             except Exception as e:
                 raise e

@@ -96,7 +96,7 @@ class Dataset(object):
                         break
                     try:
                         img = cv2.resize(img, (hparams.img_size, hparams.img_size))
-                        if len(image_cache) < 350000:
+                        if len(image_cache) < 400000:
                           image_cache[fname] = img  # Cache the resized image and preevent OOM
                         
                     except Exception as e:
@@ -163,7 +163,7 @@ class Dataset(object):
     def __getitem__(self, idx):
         #start_time = time.perf_counter()
         while 1:
-            idx = random.randint(0, len(self.all_videos) - 1)
+            #idx = random.randint(0, len(self.all_videos) - 1)
             vidname = self.all_videos[idx]
             img_names = list(glob(join(vidname, '*.jpg')))
             if len(img_names) <= 3 * syncnet_T:

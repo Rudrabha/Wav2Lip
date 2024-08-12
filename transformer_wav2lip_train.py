@@ -163,13 +163,27 @@ class Dataset(object):
 
     def __getitem__(self, idx):
         #start_time = time.perf_counter()
+        circuit_breaker_counter = 0
+        previous_vid = ""
+        
         while 1:
             #idx = random.randint(0, len(self.all_videos) - 1)
             vidname = self.all_videos[idx]
+
+            if vidname == previous_vid:
+                circuit_breaker_counter += 1
+
+            previous_vid = vidname
+
             img_names = list(glob(join(vidname, '*.jpg')))
             if len(img_names) <= 3 * syncnet_T:
                 continue
             
+            if circuit_breaker_counter > 4500:
+                print('Circuit breaker in, the problem video is ', vidname)
+                circuit_breaker_counter = 0
+                continue
+
             img_name = random.choice(img_names)
             wrong_img_name = random.choice(img_names)
             while wrong_img_name == img_name:

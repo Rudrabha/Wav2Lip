@@ -393,6 +393,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
               metrics = {"train/img_loss": avg_img_loss, 
                        "train/sync_loss": running_sync_loss / (step + 1), 
                        "train/step": global_step,
+                       "train/lower_half_loss": lower_half_l1_loss.item(),
                        "train/learning_rate": current_lr}
             
               wandb.log({**metrics})

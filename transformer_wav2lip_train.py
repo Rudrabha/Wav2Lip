@@ -26,6 +26,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from models.conv import Conv2d, Conv2dTranspose
 import time
 import multiprocessing
+from torch.nn import functional as F
 
 
 def str2bool(v):
@@ -321,6 +322,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
         #print('Starting Epoch: {}'.format(global_epoch))
         running_sync_loss, running_l1_loss, running_l2_loss = 0., 0., 0.
         prog_bar = tqdm(enumerate(train_data_loader))
+        running_img_loss = 0.0
         for step, (x, indiv_mels, mel, gt) in prog_bar:
             #print("The batch size", x.shape)
             if x.shape[0] == hparams.batch_size:
@@ -335,20 +337,27 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
 
               g = model(indiv_mels, x)
 
+              # Get the second half of the images and calculate the loss
+              lower_half1 = g[:, :, :, 96:, :]
+              lower_half2 = gt[:, :, :, 96:, :]
+              lower_half_l1_loss = F.l1_loss(lower_half1, lower_half2)
+
               if hparams.syncnet_wt > 0.:
                   sync_loss = get_sync_loss(mel, g)
               else:
                   sync_loss = 0.
 
-              l1loss = recon_loss(g, gt)
+              #l1loss = recon_loss(g, gt)
 
               l2loss = nn.functional.mse_loss(g, gt)
 
               '''
-              If the syncnet_wt is 0.03, it means the sync_loss has 3% of the loss wheras l1loss occupy 97% of the loss, 
-              this loss indicate that we want the l1loss to be more important
+              If the syncnet_wt is 0.03, it means the sync_loss has 3% of the loss wheras the rest occupy 97% of the loss
               '''
-              loss = hparams.syncnet_wt * sync_loss + (1 - hparams.syncnet_wt) * l1loss + l2loss
+
+              #l1l2_loss = 0.8 * l1loss + 0.2 * l2loss
+              loss = hparams.syncnet_wt * sync_loss + (1 - hparams.syncnet_wt) * (0.3 * l2loss + 0.7 * lower_half_l1_loss)
+              
               loss.backward()
               optimizer.step()
 
@@ -356,10 +365,8 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
                   save_sample_images(x, g, gt, global_step, checkpoint_dir)
 
               global_step += 1
-              cur_session_steps = global_step - resumed_step
 
-              running_l1_loss += l1loss.item()
-              running_l2_loss += l2loss.item()
+              running_img_loss += loss.item()
 
               if hparams.syncnet_wt > 0.:
                   running_sync_loss += sync_loss.item()
@@ -370,29 +377,28 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
                   save_checkpoint(
                       model, optimizer, global_step, checkpoint_dir, global_epoch)
 
-              avg_l1l2_loss = (running_l1_loss + running_l2_loss) / (step + 1)
+              avg_img_loss = (running_img_loss) / (step + 1)
               
               if global_step % hparams.eval_interval == 0:
                 with torch.no_grad():
                   eval_loss = eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler, 20)
 
                   #if average_sync_loss < .75:
-                  if avg_l1l2_loss < .015: # change 
+                  if avg_img_loss < .01: # change 
                           hparams.set_hparam('syncnet_wt', 0.01) # without image GAN a lesser weight is sufficient
 
-              prog_bar.set_description('Epoch: {}, L1L2: {}, Sync Loss: {}, Eval Sync Loss: {}, LR: {}, Total Loss: {}'.format(global_epoch, avg_l1l2_loss,
-                                                                      running_sync_loss / (step + 1), eval_loss, current_lr, loss.item()))
+              prog_bar.set_description('Step: {}, Avg Img Loss: {}, Sync Loss: {}, Lower Half Loss: {}, LR: {}'.format(global_step, avg_img_loss,
+                                                                      running_sync_loss / (step + 1), lower_half_l1_loss.item(), current_lr))
               
-              metrics = {"train/l1_loss": avg_l1l2_loss, 
+              metrics = {"train/img_loss": avg_img_loss, 
                        "train/sync_loss": running_sync_loss / (step + 1), 
-                       "train/epoch": global_epoch,
-                       "train/overall_loss": loss.item(),
+                       "train/step": global_step,
                        "train/learning_rate": current_lr}
             
               wandb.log({**metrics})
 
         global_epoch += 1
-        
+
 
 def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler, eval_steps = 100):
     print('Evaluating for {} steps'.format(eval_steps))

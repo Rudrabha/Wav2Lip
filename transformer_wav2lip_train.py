@@ -361,7 +361,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
               else:
                   sync_loss = 0.
 
-              #l1loss = recon_loss(g, gt)
+              l1loss = recon_loss(g, gt)
 
               l2loss = nn.functional.mse_loss(g, gt)
 
@@ -372,7 +372,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
               #l1l2_loss = 0.8 * l1loss + 0.2 * l2loss
               loss = hparams.syncnet_wt * sync_loss + (1 - hparams.syncnet_wt) * (0.3 * l2loss + 0.7 * lower_half_l1_loss)
               
-              loss.backward()
+              l1loss.backward()
               optimizer.step()
 
               if global_step % checkpoint_interval == 0:

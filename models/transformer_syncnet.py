@@ -9,45 +9,47 @@ class TransformerSyncnet(nn.Module):
 
         self.face_encoder = nn.Sequential(
             # Added by eddy
-            Conv2d(15, 64, kernel_size=(7, 7), stride=1, padding=3), #192x192
+            Conv2d(15, 128, kernel_size=(7, 7), stride=1, padding=3), #192x192
             nn.MaxPool2d(kernel_size=(2, 2), stride=2),
+            Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True),
+            Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True),
             
             # End added
-            Conv2d(64, 64, kernel_size=3, stride=1, padding=1), #96x96
-            Conv2d(64, 64, kernel_size=(7, 7), stride=1, padding=3, residual=True),
-            Conv2d(64, 64, kernel_size=(7, 7), stride=1, padding=3, residual=True),
+            Conv2d(128, 128, kernel_size=3, stride=1, padding=1), #96x96
+            Conv2d(128, 128, kernel_size=(7, 7), stride=1, padding=3, residual=True),
+            Conv2d(128, 128, kernel_size=(7, 7), stride=1, padding=3, residual=True),
 
-            Conv2d(64, 64, kernel_size=5, stride=(1, 2), padding=1), #94x47
-            Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True), #94x47
-            Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),#94x47
+            Conv2d(128, 256, kernel_size=5, stride=(1, 2), padding=1), #94x47
+            Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True), #94x47
+            Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True),#94x47
 
-            Conv2d(64, 128, kernel_size=3, stride=2, padding=1), # 47x24
-            Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True), # 47x24
-            Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True), # 47x24
+            Conv2d(256, 256, kernel_size=3, stride=2, padding=1), # 47x24
+            Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True), # 47x24
+            Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True), # 47x24
 
-            Conv2d(128, 256, kernel_size=3, stride=2, padding=1), # 24x 12
-            Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True), # 24x 12
-            Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True), # 24x 12
+            Conv2d(256, 512, kernel_size=3, stride=2, padding=1), # 24x 12
+            Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True), # 24x 12
+            Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True), # 24x 12
 
-            Conv2d(256, 256, kernel_size=3, stride=2, padding=1), #12x6
-            Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True), #12x6
-            Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True), #12x6
+            Conv2d(512, 1024, kernel_size=3, stride=2, padding=1), #12x6
+            Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1, residual=True), #12x6
+            Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1, residual=True), #12x6
 
-            Conv2d(256, 512, kernel_size=3, stride=2, padding=1), #6x3
-            Conv2d(512, 512, kernel_size=3, stride=1, padding=0), #6x3
-            Conv2d(512, 512, kernel_size=1, stride=1, padding=0),) #6x3
+            Conv2d(1024, 1024, kernel_size=3, stride=2, padding=1), #6x3
+            Conv2d(1024, 1024, kernel_size=3, stride=1, padding=0), #6x3
+            Conv2d(1024, 1024, kernel_size=1, stride=1, padding=0),) #6x3
 
         self.audio_encoder = nn.Sequential(
-            Conv2d(1, 64, kernel_size=3, stride=1, padding=1),
+            Conv2d(1, 128, kernel_size=3, stride=1, padding=1),
             
-            Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
-            Conv2d(64, 64, kernel_size=3, stride=1, padding=1, residual=True),
-
-            Conv2d(64, 128, kernel_size=3, stride=(3, 1), padding=1),
             Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(128, 128, kernel_size=3, stride=1, padding=1, residual=True),
 
-            Conv2d(128, 256, kernel_size=3, stride=3, padding=1),
+            Conv2d(128, 256, kernel_size=3, stride=(3, 1), padding=1),
+            Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True),
+            Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True),
+
+            Conv2d(256, 256, kernel_size=3, stride=3, padding=1),
             Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(256, 256, kernel_size=3, stride=1, padding=1, residual=True),
 
@@ -64,7 +66,7 @@ class TransformerSyncnet(nn.Module):
             num_layers=num_encoder_layers
         )
 
-        self.fc1 = nn.Linear(1024, 256)
+        self.fc1 = nn.Linear(1536, 256)
         self.fc2 = nn.Linear(embed_size, 128)
         self.fc3 = nn.Linear(128, num_classes)
         self.relu = nn.ReLU()

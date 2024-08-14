@@ -24,6 +24,7 @@ import traceback
 import wandb
 import time
 import multiprocessing
+import mediapipe as mp
 
 from PIL import Image
 
@@ -54,13 +55,14 @@ global_epoch = 1
 use_cuda = torch.cuda.is_available()
 use_cosine_loss=True
 sample_mode='random'
-image_cache = multiprocessing.Manager().dict()
+face_image_cache = multiprocessing.Manager().dict()
+lip_landmark_cache = multiprocessing.Manager().dict()
 orig_mel_cache = multiprocessing.Manager().dict()
 
 current_training_loss = 0.6
 learning_step_loss_threshhold = 0.3
 consecutive_threshold_count = 0
-samples = [True, True,True, True,True, True,True, False,False, False]
+samples = [True, True,True, True,True, True,True, True,True, False]
 
 print('use_cuda: {}'.format(use_cuda))
 
@@ -73,7 +75,6 @@ syncnet_mel_step_size = 16
 
 class Dataset(object):
     def __init__(self, split, use_image_cache):
-        print('A new dataset')
         self.all_videos = get_image_list(args.data_root, split)
         self.file_exist_cache = {}       
         
@@ -127,30 +128,17 @@ class Dataset(object):
         Return the processed image data, audio features, and label.
         """
 
-        circuit_breaker_counter = 0
-        previous_vid = ""
-
         start_time = time.perf_counter()
         #print("working on", self.all_videos[idx])
         while 1:
             #idx = random.randint(0, len(self.all_videos) - 1)
             vidname = self.all_videos[idx]
 
-            if vidname == previous_vid:
-                circuit_breaker_counter += 1
-
-            previous_vid = vidname
-
-            # FPS is 25, a video with length of 3 minutes might have 25 * 180 = 4500, i think we can just break for this case
-            if circuit_breaker_counter > 4500:
-                print('Circuit breaker in, the problem video is ', vidname)
-                circuit_breaker_counter = 0
-                continue
-
             img_names = list(glob(join(vidname, '*.jpg')))
             
             if len(img_names) <= 3 * syncnet_T:
                 continue
+            
             
             """
             Changed by eddy, the following are the original codes, it uses random to get the wrong_img_name, 
@@ -173,24 +161,32 @@ class Dataset(object):
 
               # Get the substring up to and including the last slash
               dir_name = img_name[:last_slash_index+1]
+              # Make sure the wrong image is 10 frame away from the correct image
               index = 10
 
-              wrong_img_name = dir_name + str(chosen_id + index) + ".jpg"
+              # Assuming index is an integer that determines the direction and magnitude of the offset
+              index = random.choice([-1, 1]) * (10 + random.randint(0, len(img_names) - 11))
 
-              while wrong_img_name not in img_names:
-                index -= 1
-                wrong_img_name = dir_name + str(chosen_id + index) + ".jpg"
-                if index < 5:
-                    wrong_img_name = random.choice(img_names)
-                    #print("Cannot find a good one, use random instead, original img_name {0} and the not good one is {1}".format(img_name, wrong_img_name))
-                    continue
+              # Ensure that the calculated index is within the bounds of the directory
+              wrong_img_id = chosen_id + index
+              circuit_breaker = 0
+              while wrong_img_id < 0 or wrong_img_id >= len(img_names):
+                  index = random.choice([-1, 1]) * (10 + random.randint(0, len(img_names) - 11))
+                  wrong_img_id = chosen_id + index
+                  circuit_breaker += 1
+                  if circuit_breaker > 100:
+                      print('Break out of circuit')
+                      wrong_img_id = chosen_id
+                      break
+
+              wrong_img_name = dir_name + str(wrong_img_id) + ".jpg"
 
             while wrong_img_name == img_name:
                 wrong_img_name = random.choice(img_names)
-
+            
+            #print('The chosen image {0} and wrong image {1}'.format(img_name, wrong_img_name))
 
             # We firstly to learn all the positive, once it reach the loss of less than 0.3, we incrementally add some negative samples 10% per step
-            
 
             good_or_bad = True
 
@@ -208,13 +204,15 @@ class Dataset(object):
             if window_fnames is None:
                 continue
             
-            window = []
+            face_window = []
+            lip_window = []
 
             all_read = True
             for fname in window_fnames:
                 #print('The image name ', fname)
-                if fname in image_cache:
-                    img = image_cache[fname]
+                if fname in face_image_cache:
+                    img = face_image_cache[fname]
+                    lip_landmark = lip_landmark_cache[fname]
                     #print('The image cache hit ', fname)
                 else:
                     img = cv2.imread(fname)
@@ -223,14 +221,20 @@ class Dataset(object):
                         break
                     try:
                         img = cv2.resize(img, (hparams.img_size, hparams.img_size))
-                        if len(image_cache) < 350000:
-                          image_cache[fname] = img  # Cache the resized image
+                        lip_landmark = get_lip_landmark(image=img)
+                        
+                        if len(face_image_cache) < 350000:
+                          face_image_cache[fname] = img  # Cache the resized image
+
+                        if len(lip_landmark_cache) < 350000:
+                            lip_landmark_cache[fname] = lip_landmark
                         
                     except Exception as e:
                         all_read = False
                         break
 
-                window.append(img)
+                face_window.append(img)
+                lip_window.append(lip_landmark)
 
             if not all_read: continue
 
@@ -264,12 +268,18 @@ class Dataset(object):
             #         img_to_save.save(f'temp1/saved_image_{idx}_{i}.png')
 
             # H x W x 3 * T
-            x = np.concatenate(window, axis=2) / 255.
+            x = np.concatenate(face_window, axis=2) / 255.
             x = x.transpose(2, 0, 1)
             x = x[:, x.shape[1]//2:]
 
+            print(x.shape)
+
+            lip_x = np.concatenate(lip_window)
+
             x = torch.FloatTensor(x)
             mel = torch.FloatTensor(mel.T).unsqueeze(0)
+
+
 
             end_time = time.perf_counter()
             execution_time = (end_time - start_time) * 1000  # Convert seconds to milliseconds
@@ -279,6 +289,50 @@ class Dataset(object):
 
 
 cross_entropy_loss = nn.CrossEntropyLoss()
+
+def get_lip_landmark(image):
+
+    # Initialize the MediaPipe FaceMesh model
+    mp_face_mesh = mp.solutions.face_mesh
+    face_mesh = mp_face_mesh.FaceMesh(static_image_mode=True, max_num_faces=1, min_detection_confidence=0.7)
+
+    # Load an image (make sure the image path is correct)
+    height, width, _ = image.shape
+
+    # Convert the image from BGR to RGB
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    # Process the image to extract face landmarks
+    results = face_mesh.process(image_rgb)
+
+    # Initialize an empty list for lip landmark embeddings
+    lip_embedding = []
+
+    if results.multi_face_landmarks:
+        for face_landmarks in results.multi_face_landmarks:
+            # Extract lip landmarks
+            for i in range(0, len(mp_face_mesh.FACEMESH_LIPS)):
+                print('Detected lip', mp_face_mesh.FACEMESH_LIPS)
+                lip_landmark = face_landmarks.landmark[mp_face_mesh.FACEMESH_LIPS[i][0]]
+                x = lip_landmark.x
+                y = lip_landmark.y
+                z = lip_landmark.z  # Include the z-coordinate for 3D information
+                lip_embedding.extend([x, y, z])
+
+    # Convert the list of landmarks to a numpy array for easy handling in machine learning models
+    lip_embedding = np.array(lip_embedding)
+
+    # Normalize the embedding (optional but recommended)
+    # This normalization ensures that all coordinates are on the same scale (between 0 and 1)
+    lip_embedding = lip_embedding / np.linalg.norm(lip_embedding)
+
+    # Print the embedding
+    print("Lip Embedding:", lip_embedding)
+
+    # Clean up
+    face_mesh.close()
+    return lip_embedding
+
 
 # added by eddy
 # Register hooks to print gradient norms
@@ -357,7 +411,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             
             wandb.log({**metrics})
 
-        if current_training_loss < 0.3:
+        if current_training_loss < 0.25:
           consecutive_threshold_count += 1
         else:
           consecutive_threshold_count = 0
@@ -392,12 +446,13 @@ def get_current_lr(optimizer):
 def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler):
     #eval_steps = 1400
     eval_steps = 20
-    eval_loop = 20
+    eval_loop = 10
     current_step = 1
 
         
     print()
     print('Evaluating for {0} steps of total steps {1}'.format(eval_steps, len(test_data_loader)))
+    prog_bar = tqdm(enumerate(test_data_loader))
     losses = []
     while 1:
         for step, (x, mel, y) in enumerate(test_data_loader):
@@ -415,12 +470,11 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, sch
             loss = cross_entropy_loss(output, y)
             losses.append(loss.item())
 
-            #print('Step: {0}, Cosine Loss: {1}'.format(step, loss))
-
             if step > eval_steps: break
 
         averaged_loss = sum(losses) / len(losses)
         print('The avg eval loss is: {0}'.format(averaged_loss))
+        prog_bar.set_description('Step: {0}/{1}, Loss: {2}'.format(current_step, eval_loop, averaged_loss))
 
         metrics = {"val/loss": averaged_loss, 
                     "val/step": global_step, 
@@ -485,7 +539,7 @@ if __name__ == "__main__":
 
     wandb.init(
       # set the wandb project where this run will be logged
-      project="my-wav2lip",
+      project="my-wav2lip-syncnet",
 
       # track hyperparameters and run metadata
       config={
@@ -504,12 +558,12 @@ if __name__ == "__main__":
     #print(train_dataset.all_videos)
 
     train_data_loader = data_utils.DataLoader(
-        train_dataset, batch_size=hparams.syncnet_batch_size, shuffle=True,
+        train_dataset, batch_size=hparams.syncnet_batch_size, shuffle=False,
         num_workers=hparams.num_workers)
 
     test_data_loader = data_utils.DataLoader(
         test_dataset, batch_size=hparams.syncnet_batch_size,
-        num_workers=8)
+        num_workers=0)
 
     device = torch.device("cuda" if use_cuda else "cpu")
 
@@ -526,4 +580,4 @@ if __name__ == "__main__":
     train(device, model, train_data_loader, test_data_loader, optimizer,
           checkpoint_dir=checkpoint_dir,
           checkpoint_interval=hparams.syncnet_checkpoint_interval,
-          nepochs=hparams.nepochs, should_print_grad_norm=True)
+          nepochs=hparams.nepochs, should_print_grad_norm=False)

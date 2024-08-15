@@ -212,6 +212,7 @@ class Dataset(object):
                     #print('The image name ', fname)
                     if fname in face_image_cache:
                         img = face_image_cache[fname]
+                        face_window.append(img)
                         #lip_landmark = lip_landmark_cache[fname]
                         #print('The image cache hit ', fname)
                     else:
@@ -237,7 +238,7 @@ class Dataset(object):
                             all_read = False
                             break
 
-                    face_window.append(img)
+                        face_window.append(img)
                     #lip_window.append(lip_landmark)
 
                 if not all_read: continue
@@ -276,17 +277,17 @@ class Dataset(object):
                 x = x.transpose(2, 0, 1)
                 x = x[:, x.shape[1]//2:]
 
-                lip_x = np.concatenate(lip_window)
+                #lip_x = np.concatenate(lip_window)
 
                 # The x shape' is (15, 96, 192), 15 channels, 96 is height(bottom half) and 192 is the width
                 # The lip shape is (180, 3)
 
                 x = torch.FloatTensor(x)
                 mel = torch.FloatTensor(mel.T).unsqueeze(0)
-                lip_x = torch.FloatTensor(lip_x)
+                #lip_x = torch.FloatTensor(lip_x)
 
 
-                return x, mel, y, lip_x
+                return x, mel, y
 
 
 cross_entropy_loss = nn.CrossEntropyLoss()
@@ -375,7 +376,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
         running_loss = 0.
         prog_bar = tqdm(enumerate(train_data_loader))
         current_lr = get_current_lr(optimizer)
-        for step, (x, mel, y, lip_x) in prog_bar:
+        for step, (x, mel, y) in prog_bar:
             
             model.train()
             optimizer.zero_grad()
@@ -385,9 +386,9 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
 
             mel = mel.to(device)
 
-            lip_x = lip_x.to(device)
+            #lip_x = lip_x.to(device)
 
-            output = model(x, mel, lip_x)
+            output = model(x, mel)
             
             y = y.to(device)
 

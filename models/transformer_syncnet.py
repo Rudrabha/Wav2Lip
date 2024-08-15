@@ -66,16 +66,19 @@ class TransformerSyncnet(nn.Module):
             num_layers=num_encoder_layers
         )
 
-        self.fc1 = nn.Linear(1536, 256)
+        self.fc1 = nn.Linear(2076, 1024)
+        self.fc4 = nn.Linear(1024, embed_size)
         self.fc2 = nn.Linear(embed_size, 128)
         self.fc3 = nn.Linear(128, num_classes)
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(p=0.2)
 
-    def forward(self, face_embedding, audio_embedding):
+    def forward(self, face_embedding, audio_embedding, lip_landmark):
 
         face_embedding = self.face_encoder(face_embedding)
         audio_embedding = self.audio_encoder(audio_embedding)
+        #lip_landmark = lip_landmark.flatten()  # (180,3) shape becomes (540,)
+
 
         # Adding a dummy dimension to match the transformer input requirements
         audio_embedding = audio_embedding.unsqueeze(1)
@@ -91,11 +94,16 @@ class TransformerSyncnet(nn.Module):
         # Concatenate lip frames and audio features
         combined = torch.cat((face_embedding, audio_embedding), dim=1)
         
+        
         # Make sure combined is 1-dimensional
         combined = combined.view(combined.size(0), -1)
+        
+        lip_landmark = lip_landmark.view(5, -1)  # Flatten bbb to shape [5, 540]
+        combined = torch.cat((combined, lip_landmark), dim=1)  # Concatenate along the last dimension
 
         # The embedding size is 1024, fc1 will reduce it to 256
         combined = self.fc1(combined)
+        combined = self.fc4(combined)
         combined = self.relu(combined)
         
         # Pass through the Transformer encoder

@@ -24,8 +24,6 @@ import traceback
 import wandb
 import time
 import multiprocessing
-import mediapipe as mp
-import tensorflow as tf
 import logging
 
 from PIL import Image
@@ -60,7 +58,7 @@ use_cuda = torch.cuda.is_available()
 use_cosine_loss=True
 sample_mode='random'
 face_image_cache = multiprocessing.Manager().dict()
-lip_landmark_cache = multiprocessing.Manager().dict()
+file_exist_cache = multiprocessing.Manager().dict()
 orig_mel_cache = multiprocessing.Manager().dict()
 
 current_training_loss = 0.6
@@ -84,8 +82,7 @@ syncnet_mel_step_size = 16
 class Dataset(object):
     
     def __init__(self, split, use_image_cache):
-        self.all_videos = get_image_list(args.data_root, split)
-        self.file_exist_cache = {}       
+        self.all_videos = get_image_list(args.data_root, split)  
         
 
     def get_frame_id(self, frame):
@@ -99,14 +96,15 @@ class Dataset(object):
         for frame_id in range(start_id, start_id + syncnet_T):
             frame = join(vidname, '{}.jpg'.format(frame_id))
             
-            if not frame in self.file_exist_cache:
+            if not frame in file_exist_cache:
               if not isfile(frame):
                 return None    
             
             
-            self.file_exist_cache[frame] = True
+            file_exist_cache[frame] = True
             window_fnames.append(frame)
         return window_fnames
+    
 
     def crop_audio_window(self, spec, start_frame):
         # num_frames = (T x hop_size * fps) / sample_rate
@@ -136,110 +134,81 @@ class Dataset(object):
         Handle exceptions and retries in case of read errors.
         Return the processed image data, audio features, and label.
         """
-
-        # mp_face_mesh = mp.solutions.face_mesh
-        # with mp_face_mesh.FaceMesh(static_image_mode=True, max_num_faces=1, min_detection_confidence=0.5) as face_mesh:
-
-          #print("working on", self.all_videos[idx])
+        should_load_diff_video = False
         while 1:
-                #idx = random.randint(0, len(self.all_videos) - 1)
-                vidname = self.all_videos[idx]
+                if should_load_diff_video:
+                    idx = random.randint(0, len(self.all_videos) - 1)
+                    should_load_diff_video = False
+                    print('Reloading a different video')
 
+                vidname = self.all_videos[idx]
                 img_names = list(glob(join(vidname, '*.jpg')))
                 
                 if len(img_names) <= 3 * syncnet_T:
+                    should_load_diff_video = True
+                    print('The video has not enough frames, it only has {0}, will retry with a differnt video'.format(len(img_names)))
                     continue
                 
+                img_name = random.choice(img_names)
+                correct_window_images = self.get_window(img_name)
+                while correct_window_images is None:
+                  img_name = random.choice(img_names)
+                  correct_window_images = self.get_window(img_name)
+
+                chosen_id = self.get_frame_id(img_name)
+
+                wrong_img_name = random.choice(img_names)          
+                wrong_img_id = self.get_frame_id(wrong_img_name)
+                wrong_window_images = self.get_window(wrong_img_name)
                 
                 """
                 Changed by eddy, the following are the original codes, it uses random to get the wrong_img_name, 
                 this might get an image that very close to the correct image(the next frame) which is a bit hard to learn.
                 Eddy introduced a new algorithm that to get a image a bit futher from the img_name to have enough difference,
                 this might help the model to converge.
-                However we can't just learn the easy samples, so we use a flag to control that
-                img_name = random.choice(img_names)
-                wrong_img_name = random.choice(img_names)
                 """
-                
-                img_name = random.choice(img_names)
-                while self.get_window(img_name) is None:
-                  img_name = random.choice(img_names)
-
-                if sample_mode == 'random':
-                  wrong_img_name = random.choice(img_names)
-                  print("The random mode image", wrong_img_name)
-                else:
-                  chosen_id = self.get_frame_id(img_name)
-                  # Find the position of the last slash
-                  last_slash_index = img_name.rfind('/')
-
-                  # Get the substring up to and including the last slash
-                  dir_name = img_name[:last_slash_index+1]
-                  
-                  wrong_img_name = random.choice(img_names)
-                  wrong_img_id = self.get_frame_id(wrong_img_name)
-                  #print('wrong img id and abs value', wrong_img_id, abs(wrong_img_id - chosen_id))
-
-                  while wrong_img_name == img_name or abs(wrong_img_id - chosen_id) < 5 or self.get_window(wrong_img_name) is None:
-                      #print('selecting a new wrong img id')
+                while wrong_img_name == img_name or abs(wrong_img_id - chosen_id) < 5 or wrong_window_images is None:
+                      #print('The selected wrong image {0} is not far engough from {1}, diff {2}, window is None {3}'.format(wrong_img_id, chosen_id, abs(wrong_img_id - chosen_id), wrong_window_images is None))
                       wrong_img_name = random.choice(img_names)
                       wrong_img_id = self.get_frame_id(wrong_img_name)
-                  
+                      wrong_window_images = self.get_window(wrong_img_name)
+
                 
-                #print('The chosen image {0} and wrong image {1}'.format(img_name, wrong_img_name))
-
-                # We firstly to learn all the positive, once it reach the loss of less than 0.3, we incrementally add some negative samples 10% per step
-
+                # We firstly to learn all the positive, once it reach the loss of less than 0.2, we incrementally add some negative samples 10% per step
                 good_or_bad = True
-
                 good_or_bad = random.choice(samples)
 
                 if good_or_bad:
                     y = 1
-                    chosen = img_name
+                    window_fnames = correct_window_images
                 else:
                     y = 0
-                    chosen = wrong_img_name
-                
-                window_fnames = self.get_window(chosen)
+                    window_fnames = wrong_window_images
                 
                 
                 face_window = []
-                lip_window = []
 
                 all_read = True
                 for fname in window_fnames:
-                    #print('The image name ', fname)
                     if fname in face_image_cache:
                         img = face_image_cache[fname]
                         face_window.append(img)
-                        #lip_landmark = lip_landmark_cache[fname]
-                        #print('The image cache hit ', fname)
                     else:
                         img = cv2.imread(fname)
                         if img is None:
                             all_read = False
                             break
                         try:
-                            img = cv2.resize(img, (hparams.img_size, hparams.img_size))
-                            
-                            # lip_landmark = get_lip_landmark(image=img, face_mesh=face_mesh)
-                            # if lip_landmark is None:
-                            #   print('lip_landmark None', fname)
-                            
+                            img = cv2.resize(img, (hparams.img_size, hparams.img_size))                            
                             
                             if len(face_image_cache) < 350000:
                               face_image_cache[fname] = img  # Cache the resized image
-
-                            # if len(lip_landmark_cache) < 350000:
-                            #     lip_landmark_cache[fname] = lip_landmark
                             
                         except Exception as e:
                             all_read = False
                             break
 
                         face_window.append(img)
-                    #lip_window.append(lip_landmark)
 
                 if not all_read: continue
 
@@ -255,14 +224,15 @@ class Dataset(object):
                         orig_mel_cache[wavpath] = orig_mel
                     
                 except Exception as e:
-                    print('error', e)
-                    traceback.print_exc() 
+                    should_load_diff_video = True
+                    print('The audio is invalid, file name {0}, will retry with a differnt video'.format(join(vidname, "audio.wav")))
                     continue
 
                 mel = self.crop_audio_window(orig_mel.copy(), img_name)
 
                 if (mel.shape[0] != syncnet_mel_step_size):
-                    #print('The mel shape is {}, but it should be {} and start num is {}'.format(mel.shape[0], syncnet_mel_step_size, img_name))
+                    should_load_diff_video = True
+                    print("This specific audio is invalid {0}".format(join(vidname, "audio.wav")))
                     continue
                 
                 # Save the sample images
@@ -277,15 +247,8 @@ class Dataset(object):
                 x = x.transpose(2, 0, 1)
                 x = x[:, x.shape[1]//2:]
 
-                #lip_x = np.concatenate(lip_window)
-
-                # The x shape' is (15, 96, 192), 15 channels, 96 is height(bottom half) and 192 is the width
-                # The lip shape is (180, 3)
-
                 x = torch.FloatTensor(x)
                 mel = torch.FloatTensor(mel.T).unsqueeze(0)
-                #lip_x = torch.FloatTensor(lip_x)
-
 
                 return x, mel, y
 
@@ -455,8 +418,7 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, sch
     eval_loop = 10
     current_step = 1
 
-        
-    print()
+
     print('Evaluating for {0} steps of total steps {1}'.format(eval_steps, len(test_data_loader)))
     prog_bar = tqdm(enumerate(test_data_loader))
     losses = []
@@ -479,7 +441,7 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, sch
             if step > eval_steps: break
 
         averaged_loss = sum(losses) / len(losses)
-        print('The avg eval loss is: {0}'.format(averaged_loss))
+        
         prog_bar.set_description('Step: {0}/{1}, Loss: {2}'.format(current_step, eval_loop, averaged_loss))
 
         metrics = {"val/loss": averaged_loss, 

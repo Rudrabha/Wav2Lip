@@ -167,11 +167,19 @@ class Dataset(object):
                 Eddy introduced a new algorithm that to get a image a bit futher from the img_name to have enough difference,
                 this might help the model to converge.
                 """
+                attempt = 0
                 while wrong_img_name == img_name or abs(wrong_img_id - chosen_id) < 5 or wrong_window_images is None:
                       #print('The selected wrong image {0} is not far engough from {1}, diff {2}, window is None {3}'.format(wrong_img_id, chosen_id, abs(wrong_img_id - chosen_id), wrong_window_images is None))
                       wrong_img_name = random.choice(img_names)
                       wrong_img_id = self.get_frame_id(wrong_img_name)
                       wrong_window_images = self.get_window(wrong_img_name)
+                      attempt += 1
+                      if attempt > 5:
+                          should_load_diff_video = True
+                          break
+                
+                if should_load_diff_video:
+                    continue
 
                 
                 # We firstly to learn all the positive, once it reach the loss of less than 0.2, we incrementally add some negative samples 10% per step

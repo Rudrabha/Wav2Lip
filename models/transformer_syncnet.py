@@ -31,13 +31,13 @@ class TransformerSyncnet(nn.Module):
             Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True), # 24x 12
             Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True), # 24x 12
 
-            Conv2d(512, 1024, kernel_size=3, stride=2, padding=1), #12x6
-            Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1, residual=True), #12x6
-            Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1, residual=True), #12x6
+            Conv2d(512, 512, kernel_size=3, stride=2, padding=1), #12x6
+            Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True), #12x6
+            Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True), #12x6
 
-            Conv2d(1024, 1024, kernel_size=3, stride=2, padding=1), #6x3
-            Conv2d(1024, 1024, kernel_size=3, stride=1, padding=0), #6x3
-            Conv2d(1024, 1024, kernel_size=1, stride=1, padding=0),) #6x3
+            Conv2d(512, 512, kernel_size=3, stride=2, padding=1), #6x3
+            Conv2d(512, 512, kernel_size=3, stride=1, padding=0), #6x3
+            Conv2d(512, 512, kernel_size=1, stride=1, padding=0),) #6x3
 
         self.audio_encoder = nn.Sequential(
             Conv2d(1, 128, kernel_size=3, stride=1, padding=1),

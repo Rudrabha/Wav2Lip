@@ -66,8 +66,8 @@ class TransformerSyncnet(nn.Module):
             num_layers=num_encoder_layers
         )
 
-        self.fc1 = nn.Linear(1536, 1024)
-        self.fc4 = nn.Linear(1024, embed_size)
+        self.fc1 = nn.Linear(1024, 512)
+        self.fc4 = nn.Linear(512, embed_size)
         self.fc2 = nn.Linear(embed_size, 128)
         self.fc3 = nn.Linear(128, num_classes)
         self.relu = nn.ReLU()

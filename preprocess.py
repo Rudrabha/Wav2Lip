@@ -37,7 +37,7 @@ template = 'ffmpeg -loglevel panic -y -i {} -strict -2 {}'
 
 def process_video_file(vfile, args, gpu_id):
 	video_stream = cv2.VideoCapture(vfile)
-	
+	print('Processing file', vfile)
 	frames = []
 	while 1:
 		still_reading, frame = video_stream.read()
@@ -91,7 +91,14 @@ def mp_handler(job):
 def main(args):
 	print('Started processing for {} with {} GPUs'.format(args.data_root, args.ngpu))
 
-	filelist = glob(path.join(args.data_root, '*/*.mp4'))
+  # Get list of .mp4 files
+	mp4_filelist = glob(path.join(args.data_root, '*/*.mp4'))
+
+  # Get list of .mov files
+	mov_filelist = glob(path.join(args.data_root, '*/*.mov'))
+
+  # Combine both lists
+	filelist = mp4_filelist + mov_filelist
 
 	jobs = [(vfile, args, i%args.ngpu) for i, vfile in enumerate(filelist)]
 	p = ThreadPoolExecutor(args.ngpu)

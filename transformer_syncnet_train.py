@@ -1,7 +1,7 @@
 from os.path import dirname, join, basename, isfile
 from tqdm import tqdm
 
-from models import SyncNet_color as SyncNet
+from models import TransformerSyncnet as TransformerSyncnet
 import audio
 
 import torch
@@ -22,7 +22,9 @@ from models.conv import Conv2d, Conv2dTranspose
 # import module 
 import traceback
 import wandb
+import time
 import multiprocessing
+import logging
 
 from PIL import Image
 
@@ -47,19 +49,22 @@ parser.add_argument('--sample_mode', help='easy or random', default=True, type=s
 
 args = parser.parse_args()
 
+# Define lip landmark indices according to MediaPipe documentation
+LIP_LANDMARKS = list(range(61, 79)) + list(range(191, 209))
 
 global_step = 1
 global_epoch = 1
 use_cuda = torch.cuda.is_available()
 use_cosine_loss=True
 sample_mode='random'
-global_cache = multiprocessing.Manager().dict()
+face_image_cache = multiprocessing.Manager().dict()
+file_exist_cache = multiprocessing.Manager().dict()
 orig_mel_cache = multiprocessing.Manager().dict()
 
 current_training_loss = 0.6
 learning_step_loss_threshhold = 0.3
 consecutive_threshold_count = 0
-samples = [True, True,True, True,True, True,True, False,False, False]
+samples = [True, True,True, True,True, True,True, True,True, False]
 
 print('use_cuda: {}'.format(use_cuda))
 
@@ -70,13 +75,14 @@ because the audio mel spectrogram ususlly has 80 frame per seconds, so 16/80 is 
 syncnet_T = 5
 syncnet_mel_step_size = 16
 
+# Initialize the MediaPipe FaceMesh model
+
+
+
 class Dataset(object):
+    
     def __init__(self, split, use_image_cache):
-        print('A new dataset')
-        self.all_videos = get_image_list(args.data_root, split)
-        self.image_cache = {}  # Initialize the cache
-        self.orig_mel_cache = {}
-        self.file_exist_cache = {}       
+        self.all_videos = get_image_list(args.data_root, split)  
         
 
     def get_frame_id(self, frame):
@@ -90,14 +96,15 @@ class Dataset(object):
         for frame_id in range(start_id, start_id + syncnet_T):
             frame = join(vidname, '{}.jpg'.format(frame_id))
             
-            if not frame in self.file_exist_cache:
+            if not frame in file_exist_cache:
               if not isfile(frame):
                 return None    
             
             
-            self.file_exist_cache[frame] = True
+            file_exist_cache[frame] = True
             window_fnames.append(frame)
         return window_fnames
+    
 
     def crop_audio_window(self, spec, start_frame):
         # num_frames = (T x hop_size * fps) / sample_rate
@@ -127,207 +134,186 @@ class Dataset(object):
         Handle exceptions and retries in case of read errors.
         Return the processed image data, audio features, and label.
         """
-        
-        #print("image cache", len(image_cache))
-        start_time = time.perf_counter()
-        #print("working on", self.all_videos[idx])
+        should_load_diff_video = False
         while 1:
-            #idx = random.randint(0, len(self.all_videos) - 1)
-            vidname = self.all_videos[idx]
+                if should_load_diff_video:
+                    idx = random.randint(0, len(self.all_videos) - 1)
+                    should_load_diff_video = False
+                    print('Reloading a different video')
 
-            img_names = list(glob(join(vidname, '*.jpg')))
-            
-            if len(img_names) <= 3 * syncnet_T:
-                continue
-            
-            """
-            Changed by eddy, the following are the original codes, it uses random to get the wrong_img_name, 
-            this might get an image that very close to the correct image(the next frame) which is a bit hard to learn.
-            Eddy introduced a new algorithm that to get a image a bit futher from the img_name to have enough difference,
-            this might help the model to converge.
-            However we can't just learn the easy samples, so we use a flag to control that
-            img_name = random.choice(img_names)
-            wrong_img_name = random.choice(img_names)
-            """
-            
-            img_name = random.choice(img_names)
-            if sample_mode == 'random':
-              wrong_img_name = random.choice(img_names)
-              print("The random mode image", wrong_img_name)
-            else:
-              chosen_id = self.get_frame_id(img_name)
-              # Find the position of the last slash
-              last_slash_index = img_name.rfind('/')
+                vidname = self.all_videos[idx]
+                img_names = list(glob(join(vidname, '*.jpg')))
+                
+                if len(img_names) <= 3 * syncnet_T:
+                    should_load_diff_video = True
+                    print('The video has not enough frames, it only has {0}, will retry with a differnt video'.format(len(img_names)))
+                    continue
+                
+                img_name = random.choice(img_names)
+                correct_window_images = self.get_window(img_name)
+                while correct_window_images is None:
+                  img_name = random.choice(img_names)
+                  correct_window_images = self.get_window(img_name)
 
-              # Get the substring up to and including the last slash
-              dir_name = img_name[:last_slash_index+1]
-              index = 10
+                chosen_id = self.get_frame_id(img_name)
 
-              wrong_img_name = dir_name + str(chosen_id + index) + ".jpg"
-
-              while wrong_img_name not in img_names:
-                index -= 1
-                wrong_img_name = dir_name + str(chosen_id + index) + ".jpg"
-                if index < 5:
-                    wrong_img_name = random.choice(img_names)
-                    #print("Cannot find a good one, use random instead, original img_name {0} and the not good one is {1}".format(img_name, wrong_img_name))
+                wrong_img_name = random.choice(img_names)          
+                wrong_img_id = self.get_frame_id(wrong_img_name)
+                wrong_window_images = self.get_window(wrong_img_name)
+                
+                """
+                Changed by eddy, the following are the original codes, it uses random to get the wrong_img_name, 
+                this might get an image that very close to the correct image(the next frame) which is a bit hard to learn.
+                Eddy introduced a new algorithm that to get a image a bit futher from the img_name to have enough difference,
+                this might help the model to converge.
+                """
+                attempt = 0
+                while wrong_img_name == img_name or abs(wrong_img_id - chosen_id) < 5 or wrong_window_images is None:
+                      #print('The selected wrong image {0} is not far engough from {1}, diff {2}, window is None {3}'.format(wrong_img_id, chosen_id, abs(wrong_img_id - chosen_id), wrong_window_images is None))
+                      wrong_img_name = random.choice(img_names)
+                      wrong_img_id = self.get_frame_id(wrong_img_name)
+                      wrong_window_images = self.get_window(wrong_img_name)
+                      attempt += 1
+                      if attempt > 5:
+                          should_load_diff_video = True
+                          break
+                
+                if should_load_diff_video:
                     continue
 
-            while wrong_img_name == img_name:
-                wrong_img_name = random.choice(img_names)
-
-
-            # We firstly to learn all the positive, once it reach the loss of less than 0.3, we incrementally add some negative samples 10% per step
-            
-
-            good_or_bad = True
-
-            good_or_bad = random.choice(samples)
-
-            if good_or_bad:
-                y = 1
-                chosen = img_name
-            else:
-                y = 0
-                chosen = wrong_img_name
-
-            
-            window_fnames = self.get_window(chosen)
-            if window_fnames is None:
-                continue
-            
-            window = []
-
-            all_read = True
-            for fname in window_fnames:
-                #print('The image name ', fname)
-                if fname in global_cache:
-                    img = global_cache[fname]
-                    #print('The image cache hit ', fname)
-                else:
-                    img = cv2.imread(fname)
-                    if img is None:
-                        all_read = False
-                        break
-                    try:
-                        img = cv2.resize(img, (hparams.img_size, hparams.img_size))
-                        global_cache[fname] = img  # Cache the resized image
-                        
-                    except Exception as e:
-                        all_read = False
-                        break
-
-                window.append(img)
-
-            if not all_read: continue
-
-            try:
-                wavpath = join(vidname, "audio.wav")
-
-                if wavpath in orig_mel_cache:
-                    orig_mel = orig_mel_cache[wavpath]
-                    #print('The audio cache hit ', wavpath)
-                else:
-                    wav = audio.load_wav(wavpath, hparams.sample_rate)
-                    orig_mel = audio.melspectrogram(wav).T
-                    orig_mel_cache[wavpath] = orig_mel
                 
-            except Exception as e:
-                print('error', e)
-                traceback.print_exc() 
-                continue
+                # We firstly to learn all the positive, once it reach the loss of less than 0.2, we incrementally add some negative samples 10% per step
+                good_or_bad = True
+                good_or_bad = random.choice(samples)
 
-            mel = self.crop_audio_window(orig_mel.copy(), img_name)
+                if good_or_bad:
+                    y = 1
+                    window_fnames = correct_window_images
+                else:
+                    y = 0
+                    window_fnames = wrong_window_images
+                
+                
+                face_window = []
 
-            if (mel.shape[0] != syncnet_mel_step_size):
-                print('The mel shape is {}, but it should be {} and start num is {}'.format(mel.shape[0], syncnet_mel_step_size, img_name))
-                continue
+                all_read = True
+                for fname in window_fnames:
+                    if fname in face_image_cache:
+                        img = face_image_cache[fname]
+                        face_window.append(img)
+                    else:
+                        img = cv2.imread(fname)
+                        if img is None:
+                            all_read = False
+                            break
+                        try:
+                            img = cv2.resize(img, (hparams.img_size, hparams.img_size))                            
+                            
+                            if len(face_image_cache) < 350000:
+                              face_image_cache[fname] = img  # Cache the resized image
+                            
+                        except Exception as e:
+                            all_read = False
+                            break
+
+                        face_window.append(img)
+
+                if not all_read: continue
+
+                try:
+                    wavpath = join(vidname, "audio.wav")
+
+                    if wavpath in orig_mel_cache:
+                        orig_mel = orig_mel_cache[wavpath]
+                        #print('The audio cache hit ', wavpath)
+                    else:
+                        wav = audio.load_wav(wavpath, hparams.sample_rate)
+                        orig_mel = audio.melspectrogram(wav).T
+                        orig_mel_cache[wavpath] = orig_mel
+                    
+                except Exception as e:
+                    should_load_diff_video = True
+                    print('The audio is invalid, file name {0}, will retry with a differnt video'.format(join(vidname, "audio.wav")))
+                    continue
+
+                mel = self.crop_audio_window(orig_mel.copy(), img_name)
+
+                if (mel.shape[0] != syncnet_mel_step_size):
+                    should_load_diff_video = True
+                    print("This specific audio is invalid {0}".format(join(vidname, "audio.wav")))
+                    continue
+                
+                # Save the sample images
+                # if idx % 100 == 0:
+                #   print('The video is ', vidname)
+                #   for i, img in enumerate(window):
+                #         img_to_save = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+                #         img_to_save.save(f'temp1/saved_image_{idx}_{i}.png')
+
+                # H x W x 3 * T
+                x = np.concatenate(face_window, axis=2) / 255.
+                x = x.transpose(2, 0, 1)
+                x = x[:, x.shape[1]//2:]
+
+                x = torch.FloatTensor(x)
+                mel = torch.FloatTensor(mel.T).unsqueeze(0)
+
+                return x, mel, y
+
+
+cross_entropy_loss = nn.CrossEntropyLoss()
+
+def get_lip_landmark(image, face_mesh):
+  try:
+    
+    # Load an image (make sure the image path is correct)
+    height, width, _ = image.shape
+
+    # Convert the image from BGR to RGB
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    # Process the image to extract face landmarks
+    results = face_mesh.process(image_rgb)
+
+        
+    if results.multi_face_landmarks:
+        for face_landmarks in results.multi_face_landmarks:
+            # Create an empty list to store the lip landmarks
+            lip_embeddings = []
             
-            # Save the sample images
-            # if idx % 100 == 0:
-            #   print('The video is ', vidname)
-            #   for i, img in enumerate(window):
-            #         img_to_save = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-            #         img_to_save.save(f'temp1/saved_image_{idx}_{i}.png')
+            # Iterate through the specific lip landmarks
+            for idx in LIP_LANDMARKS:
+                landmark = face_landmarks.landmark[idx]
+                # Extract the x, y, z coordinates
+                x = landmark.x
+                y = landmark.y
+                z = landmark.z
+                # Append the coordinates to the embeddings list
+                lip_embeddings.append([x, y, z])
+            
+            # Convert the list to a numpy array (optional, for easier manipulation)
+            lip_embeddings = np.array(lip_embeddings)
+            break
 
-            # H x W x 3 * T
-            x = np.concatenate(window, axis=2) / 255.
-            x = x.transpose(2, 0, 1)
-            x = x[:, x.shape[1]//2:]
+    # Normalize the embedding (optional but recommended)
+    # This normalization ensures that all coordinates are on the same scale (between 0 and 1)
+    lip_embeddings = lip_embeddings / np.linalg.norm(lip_embeddings)
 
-            x = torch.FloatTensor(x)
-            mel = torch.FloatTensor(mel.T).unsqueeze(0)
+    # Print the embedding
+    #print("Lip Embedding:", lip_embedding)
 
-            end_time = time.perf_counter()
-            execution_time = (end_time - start_time) * 1000  # Convert seconds to milliseconds
-            #print(f"The method took {execution_time:.2f} milliseconds to execute.")
-
-            return x, mel, y
-
-
-logloss = nn.BCELoss()
-def cosine_loss(a, v, y):
-    """
-    Computes the cosine similarity between audio and face embeddings.
-    Reshapes the similarity scores for compatibility with ground truth labels.
-    Uses logistic loss (binary cross-entropy) to penalize incorrect similarity predictions.
-    """
-    d = nn.functional.cosine_similarity(a, v)
-    loss = logloss(d.unsqueeze(1), y)
-
-    return loss
-
-def cosine_bce_loss(a, v, y):
-    """
-    Computes the cosine similarity between audio and face embeddings.
-    Applies a sigmoid to the similarity scores for compatibility with ground truth labels.
-    Uses binary cross-entropy loss to penalize incorrect similarity predictions.
-    """
     
-    # Compute cosine similarity
-    cosine_sim = nn.functional.cosine_similarity(a, v)
-
-    # Apply sigmoid to map similarity scores to [0, 1]
-    sigmoid_sim = torch.sigmoid(cosine_sim)
-
-    # Reshape for BCELoss compatibility
-    sigmoid_sim = sigmoid_sim.unsqueeze(1)
-
-    # Compute binary cross-entropy loss
-    loss = logloss(sigmoid_sim, y)
-
-    return loss
-    
-
-def contrastive_loss(a, v, y, margin=0.5):
-    """
-    Contrastive loss tries to minimize the distance between similar pairs and maximize the distance between dissimilar pairs up to a margin.
-    """
-    d = nn.functional.pairwise_distance(a, v)
-    loss = torch.mean((1 - y) * torch.pow(d, 2) + y * torch.pow(torch.clamp(margin - d, min=0.0), 2))
-    return loss
-
-def contrastive_loss2(a, v, y, margin=0.3):
-        # Compute the Euclidean distance between the embeddings
-        euclidean_distance = nn.functional.pairwise_distance(a, v)
-
-        # Compute contrastive loss
-        euclidean_distance = (1 - y) * 0.5 * torch.pow(euclidean_distance, 2) + \
-               y * 0.5 * torch.pow(torch.clamp(margin - euclidean_distance, min=0.0), 2)
-        
-        # Apply sigmoid to the Euclidean distance to get a probability-like value
-        sigmoid_distance = torch.sigmoid(euclidean_distance).unsqueeze(1)
-        
-        # Compute binary cross-entropy loss using the sigmoid-transformed distance
-        bce_loss = logloss(sigmoid_distance, y)
-        
-        return bce_loss
+    return lip_embeddings
+  except Exception as e:
+    print('error', e)
+    traceback.print_exc() 
+    return None
 
 # added by eddy
 # Register hooks to print gradient norms
 def print_grad_norm(module, grad_input, grad_output):
     for i, grad in enumerate(grad_output):
-        if grad is not None and global_step % 100 == 0:
+        if grad is not None and global_step % hparams.syncnet_eval_interval == 0:
             print(f'{module.__class__.__name__} - grad_output[{i}] norm: {grad.norm().item()}')
 
 # end added by eddy
@@ -340,7 +326,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     global global_step, global_epoch, consecutive_threshold_count, current_training_loss
     resumed_step = global_step
     print('start training data folder', train_data_loader)
-    patience = 40
+    patience = 100
 
     current_lr = get_current_lr(optimizer)
     print('The learning rate is: {0}'.format(current_lr))
@@ -355,7 +341,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     
     # end
 
-
+    
 
     while global_epoch < nepochs:
         running_loss = 0.
@@ -371,10 +357,13 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
 
             mel = mel.to(device)
 
-            a, v = model(mel, x)
+            #lip_x = lip_x.to(device)
+
+            output = model(x, mel)
+            
             y = y.to(device)
 
-            loss = cosine_bce_loss(a, v, y) #if (global_epoch // 50) % 2 == 0 else contrastive_loss2(a, v, y)
+            loss = cross_entropy_loss(output, y) #if (global_epoch // 50) % 2 == 0 else contrastive_loss2(a, v, y)
             loss.backward()
             optimizer.step()
 
@@ -399,7 +388,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             
             wandb.log({**metrics})
 
-        if current_training_loss < 0.3:
+        if current_training_loss < 0.25:
           consecutive_threshold_count += 1
         else:
           consecutive_threshold_count = 0
@@ -434,12 +423,12 @@ def get_current_lr(optimizer):
 def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler):
     #eval_steps = 1400
     eval_steps = 20
-    eval_loop = 20
+    eval_loop = 10
     current_step = 1
 
-        
-    print()
+
     print('Evaluating for {0} steps of total steps {1}'.format(eval_steps, len(test_data_loader)))
+    prog_bar = tqdm(enumerate(test_data_loader))
     losses = []
     while 1:
         for step, (x, mel, y) in enumerate(test_data_loader):
@@ -451,18 +440,17 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, sch
 
             mel = mel.to(device)
 
-            a, v = model(mel, x)
+            output = model(x, mel)
             y = y.to(device)
 
-            loss = cosine_bce_loss(a, v, y)
+            loss = cross_entropy_loss(output, y)
             losses.append(loss.item())
-
-            #print('Step: {0}, Cosine Loss: {1}'.format(step, loss))
 
             if step > eval_steps: break
 
         averaged_loss = sum(losses) / len(losses)
-        print('The avg eval loss is: {0}'.format(averaged_loss))
+        
+        prog_bar.set_description('Step: {0}/{1}, Loss: {2}'.format(current_step, eval_loop, averaged_loss))
 
         metrics = {"val/loss": averaged_loss, 
                     "val/step": global_step, 
@@ -512,8 +500,8 @@ def load_checkpoint(path, model, optimizer, reset_optimizer=False):
     global_epoch = checkpoint["global_epoch"]
 
     # Reset the new learning rate
-    # for param_group in optimizer.param_groups:
-    #     param_group['lr'] = 0.0001
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = 0.0001
 
     return model
 
@@ -525,14 +513,18 @@ if __name__ == "__main__":
     print("The use_cosine_loss value", use_cosine_loss)
     print("The sample mode value", sample_mode)
 
+    logging.getLogger().setLevel(logging.ERROR)
+
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
     wandb.init(
       # set the wandb project where this run will be logged
-      project="my-wav2lip",
+      project="my-wav2lip-syncnet",
 
       # track hyperparameters and run metadata
       config={
       "learning_rate": hparams.syncnet_lr,
-      "architecture": "Syncnet",
+      "architecture": "TransformerSyncnet",
       "dataset": "MyOwn",
       "epochs": 200000,
       }
@@ -546,21 +538,21 @@ if __name__ == "__main__":
     #print(train_dataset.all_videos)
 
     train_data_loader = data_utils.DataLoader(
-        train_dataset, batch_size=hparams.syncnet_batch_size, shuffle=True,
+        train_dataset, batch_size=hparams.syncnet_batch_size, shuffle=False,
         num_workers=hparams.num_workers)
 
     test_data_loader = data_utils.DataLoader(
         test_dataset, batch_size=hparams.syncnet_batch_size,
-        num_workers=8)
+        num_workers=0)
 
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # Model
-    model = SyncNet().to(device)
+    model = TransformerSyncnet(embed_size=256, num_heads=8, num_encoder_layers=6).to(device)
     print('total trainable params {}'.format(sum(p.numel() for p in model.parameters() if p.requires_grad)))
 
     optimizer = optim.Adam([p for p in model.parameters() if p.requires_grad],
-                           lr=hparams.syncnet_lr,betas=(0.9, 0.999), weight_decay=1e-4)
+                           lr=hparams.syncnet_lr,betas=(0.5, 0.999), weight_decay=1e-5)
 
     if checkpoint_path is not None:
         load_checkpoint(checkpoint_path, model, optimizer, reset_optimizer=False)
@@ -568,4 +560,4 @@ if __name__ == "__main__":
     train(device, model, train_data_loader, test_data_loader, optimizer,
           checkpoint_dir=checkpoint_dir,
           checkpoint_interval=hparams.syncnet_checkpoint_interval,
-          nepochs=hparams.nepochs, should_print_grad_norm=True)
+          nepochs=hparams.nepochs, should_print_grad_norm=False)

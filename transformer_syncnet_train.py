@@ -139,7 +139,6 @@ class Dataset(object):
                 if should_load_diff_video:
                     idx = random.randint(0, len(self.all_videos) - 1)
                     should_load_diff_video = False
-                    print('Reloading a different video')
 
                 vidname = self.all_videos[idx]
                 img_names = list(glob(join(vidname, '*.jpg')))
@@ -508,14 +507,7 @@ def load_checkpoint(path, model, optimizer, reset_optimizer=False):
 if __name__ == "__main__":
     checkpoint_dir = args.checkpoint_dir
     checkpoint_path = args.checkpoint_path
-    use_cosine_loss = args.use_cosine_loss
     sample_mode = args.sample_mode
-    print("The use_cosine_loss value", use_cosine_loss)
-    print("The sample mode value", sample_mode)
-
-    logging.getLogger().setLevel(logging.ERROR)
-
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
     wandb.init(
       # set the wandb project where this run will be logged
@@ -543,7 +535,7 @@ if __name__ == "__main__":
 
     test_data_loader = data_utils.DataLoader(
         test_dataset, batch_size=hparams.syncnet_batch_size,
-        num_workers=0)
+        num_workers=8)
 
     device = torch.device("cuda" if use_cuda else "cpu")
 

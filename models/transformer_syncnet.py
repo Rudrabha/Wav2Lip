@@ -62,14 +62,11 @@ class TransformerSyncnet(nn.Module):
 
 
         self.transformer_encoder = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(d_model=embed_size, nhead=num_heads, dropout=dropout),
+            nn.TransformerEncoderLayer(d_model=1024, nhead=num_heads, dropout=dropout),
             num_layers=num_encoder_layers
         )
 
-        self.fc1 = nn.Linear(1024, 512)
-        self.fc4 = nn.Linear(512, embed_size)
-        self.fc2 = nn.Linear(embed_size, 128)
-        self.fc3 = nn.Linear(128, num_classes)
+        self.fc1 = nn.Linear(1024, num_classes)
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(p=0.2)
 
@@ -101,21 +98,11 @@ class TransformerSyncnet(nn.Module):
         #lip_landmark = lip_landmark.view(5, -1)  # Flatten bbb to shape [5, 540]
         #combined = torch.cat((combined, lip_landmark), dim=1)  # Concatenate along the last dimension
 
-        # The embedding size is 1024, fc1 will reduce it to 256
-        combined = self.fc1(combined)
-        combined = self.fc4(combined)
-        combined = self.relu(combined)
-        
-        # Pass through the Transformer encoder
+        # Pass through the Transformer encoder, the input size is 1024
         transformer_output = self.transformer_encoder(combined)
         out = self.relu(transformer_output)
-
-        # The output from the transformer should be 256, add a dropout layer to drop 0.2, then further reduce to 128 classes
         out = self.dropout(out)
-        out = self.fc2(out)
         out = self.relu(out)
-        
-        # Further reduce to 2 classes
-        out = self.fc3(out)
+        out = self.fc1(out)
         
         return out

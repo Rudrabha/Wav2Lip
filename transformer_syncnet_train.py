@@ -64,7 +64,7 @@ orig_mel_cache = multiprocessing.Manager().dict()
 current_training_loss = 0.6
 learning_step_loss_threshhold = 0.3
 consecutive_threshold_count = 0
-samples = [True, True,True, True,True, True,True, True,True, False]
+samples = [True, True,True, True,True, True,True, False, False, False]
 
 print('use_cuda: {}'.format(use_cuda))
 
@@ -199,7 +199,6 @@ class Dataset(object):
                 for fname in window_fnames:
                     if fname in face_image_cache:
                         img = face_image_cache[fname]
-                        face_window.append(img)
                     else:
                         img = cv2.imread(fname)
                         if img is None:
@@ -214,8 +213,26 @@ class Dataset(object):
                         except Exception as e:
                             all_read = False
                             break
+                    
+                    '''
+                    Data augmentation
+                    0 means unchange
+                    1 for grayscale
+                    2 for brightness
+                    3 for contrast
+                    '''
+                    option = random.choices([0, 1, 2, 3]) 
+                    if option == 1:
+                        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                        img = cv2.merge([img_gray, img_gray, img_gray])
+                    elif option == 2:
+                        brightness_factor = np.random.uniform(0.7, 1.3)
+                        img = cv2.convertScaleAbs(img, alpha=brightness_factor, beta=0)
+                    elif option == 3:
+                        contrast_factor = np.random.uniform(0.7, 1.3)
+                        img = cv2.convertScaleAbs(img, alpha=contrast_factor, beta=0)
 
-                        face_window.append(img)
+                    face_window.append(img)
 
                 if not all_read: continue
 

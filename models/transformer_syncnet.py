@@ -74,12 +74,6 @@ class TransformerSyncnet(nn.Module):
 
         face_embedding = self.face_encoder(face_embedding)
         audio_embedding = self.audio_encoder(audio_embedding)
-        #lip_landmark = lip_landmark.flatten()  # (180,3) shape becomes (540,)
-
-
-        # Adding a dummy dimension to match the transformer input requirements
-        audio_embedding = audio_embedding.unsqueeze(1)
-        face_embedding = face_embedding.unsqueeze(1)
 
         audio_embedding = audio_embedding.view(audio_embedding.size(0), -1)
         face_embedding = face_embedding.view(face_embedding.size(0), -1)
@@ -102,7 +96,6 @@ class TransformerSyncnet(nn.Module):
         transformer_output = self.transformer_encoder(combined)
         out = self.relu(transformer_output)
         out = self.dropout(out)
-        out = self.relu(out)
         out = self.fc1(out)
         
-        return out
+        return out, audio_embedding, face_embedding

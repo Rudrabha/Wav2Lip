@@ -279,6 +279,16 @@ class Dataset(object):
 
 cross_entropy_loss = nn.CrossEntropyLoss()
 
+logloss = nn.BCELoss()
+def cosine_loss(a, v, y):
+    d = nn.functional.cosine_similarity(a, v)
+
+    target_tensor = y.float().unsqueeze(1).unsqueeze(1)
+
+    loss = logloss(d, target_tensor)
+
+    return loss
+
 def get_lip_landmark(image, face_mesh):
   try:
     
@@ -373,13 +383,13 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
 
             mel = mel.to(device)
 
-            #lip_x = lip_x.to(device)
-
-            output = model(x, mel)
+            output, audio_embedding, face_embedding = model(x, mel)
             
-            y = y.to(device)
-
-            loss = cross_entropy_loss(output, y) #if (global_epoch // 50) % 2 == 0 else contrastive_loss2(a, v, y)
+            y = y.to(device)                        
+            
+            ce_loss = cross_entropy_loss(output, y) #if (global_epoch // 50) % 2 == 0 else contrastive_loss2(a, v, y)
+            cos_loss = cosine_loss(audio_embedding, face_embedding, y)
+            loss = 0.5 * ce_loss + 0.5 * cos_loss
             loss.backward()
             optimizer.step()
 
@@ -456,10 +466,13 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, sch
 
             mel = mel.to(device)
 
-            output = model(x, mel)
-            y = y.to(device)
+            output, audio_embedding, face_embedding = model(x, mel)
+            y = y.to(device)                
 
-            loss = cross_entropy_loss(output, y)
+            ce_loss = cross_entropy_loss(output, y) #if (global_epoch // 50) % 2 == 0 else contrastive_loss2(a, v, y)
+            cos_loss = cosine_loss(audio_embedding, face_embedding, y)
+            loss = 0.5 * ce_loss + 0.5 * cos_loss
+
             losses.append(loss.item())
 
             if step > eval_steps: break

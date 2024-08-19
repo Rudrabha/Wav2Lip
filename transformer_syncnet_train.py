@@ -283,7 +283,7 @@ logloss = nn.BCELoss()
 def cosine_loss(a, v, y):
     d = nn.functional.cosine_similarity(a, v)
 
-    target_tensor = y.float().unsqueeze(1).unsqueeze(1)
+    target_tensor = y.float()
 
     loss = logloss(d, target_tensor)
 

@@ -25,6 +25,7 @@ import wandb
 import time
 import multiprocessing
 import logging
+import matplotlib.pyplot as plt
 
 from PIL import Image
 
@@ -221,16 +222,33 @@ class Dataset(object):
                     2 for brightness
                     3 for contrast
                     '''
-                    option = random.choices([0, 1, 2, 3]) 
+                    option = random.choices([0, 1, 2, 3, 4])[0] 
+                    
                     if option == 1:
                         img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                         img = cv2.merge([img_gray, img_gray, img_gray])
+                        
                     elif option == 2:
                         brightness_factor = np.random.uniform(0.7, 1.3)
                         img = cv2.convertScaleAbs(img, alpha=brightness_factor, beta=0)
+                        
                     elif option == 3:
                         contrast_factor = np.random.uniform(0.7, 1.3)
                         img = cv2.convertScaleAbs(img, alpha=contrast_factor, beta=0)
+                    elif option == 4:
+                        angle = np.random.uniform(-15, 15)  # Random angle between -15 and 15 degrees
+
+                        # Get the image dimensions
+                        (h, w) = img.shape[:2]
+
+                        # Calculate the center of the image
+                        center = (w // 2, h // 2)
+
+                        # Get the rotation matrix
+                        rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
+
+                        # Perform the rotation
+                        img = cv2.warpAffine(img, rotation_matrix, (w, h))
 
                     face_window.append(img)
 
@@ -258,13 +276,9 @@ class Dataset(object):
                     should_load_diff_video = True
                     print("This specific audio is invalid {0}".format(join(vidname, "audio.wav")))
                     continue
-                
-                # Save the sample images
-                # if idx % 100 == 0:
-                #   print('The video is ', vidname)
-                #   for i, img in enumerate(window):
-                #         img_to_save = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-                #         img_to_save.save(f'temp1/saved_image_{idx}_{i}.png')
+
+                if idx % 1000 == 0:
+                  save_sample_images(np.concatenate(face_window, axis=2), idx, mel)
 
                 # H x W x 3 * T
                 x = np.concatenate(face_window, axis=2) / 255.
@@ -288,6 +302,41 @@ def cosine_loss(a, v, y):
     loss = logloss(d, target_tensor)
 
     return loss
+
+def save_sample_images(x, idx, orig_mel):
+    
+    x = x.transpose(2, 0, 1)  # Now x is of shape (3*T, H, W)
+
+    x = x[:, x.shape[1] // 2:, :]
+
+    x_final = x.transpose(1, 2, 0)  # Transpose back to H x W x C
+
+    # Initialize an empty list to store each image
+    images = []
+
+    for i in range(5):  # There are 5 images, hence 5 sets of 3 channels
+        img = x_final[:, :, i*3:(i+1)*3]  # Select the i-th image channels
+        img = img.astype(np.uint8)  # Convert back to uint8 for saving
+        images.append(img)
+
+    # Concatenate the images horizontally
+    concatenated_image = np.hstack(images)
+
+    # Save the concatenated image
+    cv2.imwrite('img_{0}_concatenated.jpg'.format(idx), concatenated_image)
+    
+    # Persist the mel-spectrogram as an image
+    plt.figure(figsize=(10, 4))
+    plt.imshow(orig_mel.T, aspect='auto', origin='lower', interpolation='none')
+    plt.colorbar(format='%+2.0f dB')
+    plt.title('Mel-Spectrogram')
+    plt.xlabel('Time')
+    plt.ylabel('Frequency')
+    plt.tight_layout()
+
+    # Save as image
+    plt.savefig("img_{0}_mel_spectrogram.png".format(idx))
+    plt.close()
 
 def get_lip_landmark(image, face_mesh):
   try:
@@ -387,14 +436,12 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             
             y = y.to(device)                        
             
-            ce_loss = cross_entropy_loss(output, y) #if (global_epoch // 50) % 2 == 0 else contrastive_loss2(a, v, y)
-            cos_loss = cosine_loss(audio_embedding, face_embedding, y)
-            loss = 0.5 * ce_loss + 0.5 * cos_loss
+            loss = cross_entropy_loss(output, y) #if (global_epoch // 50) % 2 == 0 else contrastive_loss2(a, v, y)
+
             loss.backward()
             optimizer.step()
 
             global_step += 1
-            cur_session_steps = global_step - resumed_step
             running_loss += loss.item()
 
             if global_step == 1 or global_step % checkpoint_interval == 0:
@@ -560,7 +607,7 @@ if __name__ == "__main__":
     #print(train_dataset.all_videos)
 
     train_data_loader = data_utils.DataLoader(
-        train_dataset, batch_size=hparams.syncnet_batch_size, shuffle=False,
+        train_dataset, batch_size=hparams.syncnet_batch_size, shuffle=True,
         num_workers=hparams.num_workers)
 
     test_data_loader = data_utils.DataLoader(
@@ -570,7 +617,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if use_cuda else "cpu")
 
     # Model
-    model = TransformerSyncnet(embed_size=256, num_heads=8, num_encoder_layers=6).to(device)
+    model = TransformerSyncnet(num_heads=8, num_encoder_layers=6).to(device)
     print('total trainable params {}'.format(sum(p.numel() for p in model.parameters() if p.requires_grad)))
 
     optimizer = optim.Adam([p for p in model.parameters() if p.requires_grad],

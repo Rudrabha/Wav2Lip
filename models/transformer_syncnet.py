@@ -4,7 +4,7 @@ from torch.nn import functional as F
 from .conv import Conv2d
 
 class TransformerSyncnet(nn.Module):
-    def __init__(self, embed_size, num_heads, num_encoder_layers, num_classes=2, dropout=0.1):
+    def __init__(self, num_heads, num_encoder_layers, num_classes=2, dropout=0.1):
         super(TransformerSyncnet, self).__init__()
 
         self.face_encoder = nn.Sequential(

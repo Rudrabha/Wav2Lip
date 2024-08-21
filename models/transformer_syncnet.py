@@ -96,6 +96,6 @@ class TransformerSyncnet(nn.Module):
         transformer_output = self.transformer_encoder(combined)
         out = self.relu(transformer_output)
         out = self.dropout(out)
-        out = self.fc1(out)
+        #out = self.fc1(out)
         
         return out, audio_embedding, face_embedding

@@ -296,11 +296,13 @@ cross_entropy_loss = nn.CrossEntropyLoss()
 logloss = nn.BCELoss()
 def cosine_loss(a, v, y):
     d = nn.functional.cosine_similarity(a, v)
-
-    target_tensor = y.float()
-
-    loss = logloss(d, target_tensor)
-
+    
+    # Scale cosine similarity to range [0, 1]
+    cos_sim_scaled = (1 + d) / 2.0
+    
+    # Calculate the loss: the target is 1 for similar pairs and 0 for dissimilar pairs
+    loss = nn.functional.mse_loss(cos_sim_scaled, y.float())
+    
     return loss
 
 def save_sample_images(x, idx, orig_mel):
@@ -401,7 +403,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     global global_step, global_epoch, consecutive_threshold_count, current_training_loss
     resumed_step = global_step
     print('start training data folder', train_data_loader)
-    patience = 100
+    patience = 50
 
     current_lr = get_current_lr(optimizer)
     print('The learning rate is: {0}'.format(current_lr))
@@ -437,6 +439,10 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             y = y.to(device)                        
             
             loss = cross_entropy_loss(output, y) #if (global_epoch // 50) % 2 == 0 else contrastive_loss2(a, v, y)
+
+            cos_loss = cosine_loss(audio_embedding, face_embedding, y)
+
+            print('The CE loss: {0} and cos loss: {1}'.format(loss.item(), cos_loss.item()))
 
             loss.backward()
             optimizer.step()
@@ -496,7 +502,7 @@ def get_current_lr(optimizer):
 def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler):
     #eval_steps = 1400
     eval_steps = 20
-    eval_loop = 10
+    eval_loop = 20
     current_step = 1
 
 
@@ -516,10 +522,8 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir, sch
             output, audio_embedding, face_embedding = model(x, mel)
             y = y.to(device)                
 
-            ce_loss = cross_entropy_loss(output, y) #if (global_epoch // 50) % 2 == 0 else contrastive_loss2(a, v, y)
-            cos_loss = cosine_loss(audio_embedding, face_embedding, y)
-            loss = 0.5 * ce_loss + 0.5 * cos_loss
-
+            loss = cross_entropy_loss(output, y) #if (global_epoch // 50) % 2 == 0 else contrastive_loss2(a, v, y)
+            
             losses.append(loss.item())
 
             if step > eval_steps: break
@@ -577,7 +581,7 @@ def load_checkpoint(path, model, optimizer, reset_optimizer=False):
 
     # Reset the new learning rate
     for param_group in optimizer.param_groups:
-        param_group['lr'] = 0.0001
+        param_group['lr'] = 0.00003
 
     return model
 

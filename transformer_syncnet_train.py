@@ -422,6 +422,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
 
     while global_epoch < nepochs:
         running_loss = 0.
+        running_cos_loss = 0.
         prog_bar = tqdm(enumerate(train_data_loader))
         current_lr = get_current_lr(optimizer)
         for step, (x, mel, y) in prog_bar:
@@ -442,13 +443,13 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
 
             cos_loss = cosine_loss(audio_embedding, face_embedding, y)
 
-            print('The CE loss: {0} and cos loss: {1}'.format(loss.item(), cos_loss.item()))
-
             loss.backward()
             optimizer.step()
 
             global_step += 1
             running_loss += loss.item()
+            running_cos_loss += cos_loss.item()
+
 
             if global_step == 1 or global_step % checkpoint_interval == 0:
                 save_checkpoint(
@@ -459,7 +460,8 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
                     eval_model(test_data_loader, global_step, device, model, checkpoint_dir, scheduler)
                 
             current_training_loss = running_loss / (step + 1)
-            prog_bar.set_description('Global Step: {0}, Epoch: {1}, Loss: {2}, current learning rate: {3}'.format(global_step, global_epoch, current_training_loss, current_lr))
+            current_cos_loss = running_cos_loss / (step + 1)
+            prog_bar.set_description('Global Step: {0}, Epoch: {1}, CE Loss: {2}, Cos Loss: {3}, LR: {4}'.format(global_step, global_epoch, current_training_loss, current_cos_loss, current_lr))
             metrics = {"train/train_loss": current_training_loss, 
                        "train/step": global_step, 
                        "train/epoch": global_epoch,

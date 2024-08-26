@@ -213,8 +213,6 @@ class Dataset(object):
                     orig_mel = audio.melspectrogram(wav).T
                     orig_mel_cache[wavpath] = orig_mel
 
-            
-
                 mel = self.crop_audio_window(orig_mel.copy(), img_name)
                 
                 if (mel.shape[0] != syncnet_mel_step_size):
@@ -225,6 +223,15 @@ class Dataset(object):
 
                 window = self.prepare_window(window)
                 y = window.copy()
+
+
+                '''
+                Set the second half of the images to be black, the window has 5 images
+                The wrong_window contains images that do not align with the audio
+                x contains 10 images, the first 5 are the correct iamges with second half black out, the last 5 are the incorrect images to the audio
+                indiv_mels contains the corresponding audio for the given window
+                y is the window that without the second half black out
+                '''
                 window[:, :, window.shape[2]//2:] = 0.
 
                 wrong_window = self.prepare_window(wrong_window)
@@ -233,11 +240,10 @@ class Dataset(object):
 
                 x = torch.FloatTensor(x)
                 mel = torch.FloatTensor(mel.T).unsqueeze(0)
+
                 indiv_mels = torch.FloatTensor(indiv_mels).unsqueeze(1)
+
                 y = torch.FloatTensor(y)
-                # end_time = time.perf_counter()
-                # execution_time = (end_time - start_time) * 1000  # Convert seconds to milliseconds
-                # print(f"The method took {execution_time:.2f} milliseconds to execute.")
 
                 return x, indiv_mels, mel, y
 

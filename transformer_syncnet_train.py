@@ -146,7 +146,7 @@ class Dataset(object):
                 
                 if len(img_names) <= 3 * syncnet_T:
                     should_load_diff_video = True
-                    print('The video has not enough frames, it only has {0}, will retry with a differnt video'.format(len(img_names)))
+                    print('The video has not enough frames, {0}'.format(vidname))
                     continue
                 
                 img_name = random.choice(img_names)
@@ -269,7 +269,7 @@ class Dataset(object):
                     should_load_diff_video = True
                     print('The audio is invalid, file name {0}, will retry with a differnt video'.format(join(vidname, "audio.wav")))
                     continue
-
+                
                 mel = self.crop_audio_window(orig_mel.copy(), img_name)
 
                 if (mel.shape[0] != syncnet_mel_step_size):
@@ -423,6 +423,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
     while global_epoch < nepochs:
         running_loss = 0.
         running_cos_loss = 0.
+        running_mse_loss = 0.
         prog_bar = tqdm(enumerate(train_data_loader))
         current_lr = get_current_lr(optimizer)
         for step, (x, mel, y) in prog_bar:
@@ -441,14 +442,18 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             
             loss = cross_entropy_loss(output, y) #if (global_epoch // 50) % 2 == 0 else contrastive_loss2(a, v, y)
 
+
             cos_loss = cosine_loss(audio_embedding, face_embedding, y)
 
-            loss.backward()
+            mse_loss = nn.functional.mse_loss(output, y.float().unsqueeze(1))
+
+            mse_loss.backward()
             optimizer.step()
 
             global_step += 1
             running_loss += loss.item()
             running_cos_loss += cos_loss.item()
+            running_mse_loss += mse_loss.item()
 
 
             if global_step == 1 or global_step % checkpoint_interval == 0:
@@ -461,7 +466,8 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
                 
             current_training_loss = running_loss / (step + 1)
             current_cos_loss = running_cos_loss / (step + 1)
-            prog_bar.set_description('Global Step: {0}, Epoch: {1}, CE Loss: {2}, Cos Loss: {3}, LR: {4}'.format(global_step, global_epoch, current_training_loss, current_cos_loss, current_lr))
+            running_mse_loss = running_mse_loss / (step + 1)
+            prog_bar.set_description('Global Step: {0}, Epoch: {1}, CE Loss: {2}, Cos Loss: {3}, MSE Loss: {4}, LR: {5}'.format(global_step, global_epoch, current_training_loss, current_cos_loss, running_mse_loss, current_lr))
             metrics = {"train/train_loss": current_training_loss, 
                        "train/step": global_step, 
                        "train/epoch": global_epoch,

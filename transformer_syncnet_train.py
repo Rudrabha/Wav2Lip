@@ -442,12 +442,13 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             
             loss = cross_entropy_loss(output, y) #if (global_epoch // 50) % 2 == 0 else contrastive_loss2(a, v, y)
 
-
             cos_loss = cosine_loss(audio_embedding, face_embedding, y)
 
             mse_loss = nn.functional.mse_loss(output, y.float().unsqueeze(1))
 
-            mse_loss.backward()
+            back_loss = 0.5 * loss + 0.5 * cos_loss
+
+            back_loss.backward()
             optimizer.step()
 
             global_step += 1
@@ -468,7 +469,9 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             current_cos_loss = running_cos_loss / (step + 1)
             running_mse_loss = running_mse_loss / (step + 1)
             prog_bar.set_description('Global Step: {0}, Epoch: {1}, CE Loss: {2}, Cos Loss: {3}, MSE Loss: {4}, LR: {5}'.format(global_step, global_epoch, current_training_loss, current_cos_loss, running_mse_loss, current_lr))
-            metrics = {"train/train_loss": current_training_loss, 
+            metrics = {"train/ce_loss": current_training_loss, 
+                       "train/cos_loss": current_cos_loss, 
+                       "train/mse_loss": running_mse_loss, 
                        "train/step": global_step, 
                        "train/epoch": global_epoch,
                        "train/learning_rate": current_lr}

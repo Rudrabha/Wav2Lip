@@ -84,6 +84,7 @@ class TransformerSyncnet(nn.Module):
 
         self.fc = nn.Linear(1152, 512) 
         self.fc2 = nn.Linear(1280, 512) 
+        self.fc3 = nn.Linear(1024, 2) 
         
 
     def forward(self, face_embedding, audio_embedding):
@@ -110,5 +111,6 @@ class TransformerSyncnet(nn.Module):
         # Pass through the Transformer encoder, the input size is 1024
         transformer_output = self.transformer_encoder(combined)
         out = self.relu(transformer_output)
+        out = self.fc3(out)
         
         return out, audio_embedding, face_embedding

@@ -208,7 +208,7 @@ class Dataset(object):
                         try:
                             img = cv2.resize(img, (hparams.img_size, hparams.img_size))                            
                             
-                            if len(face_image_cache) < 350000:
+                            if len(face_image_cache) < 280000:
                               face_image_cache[fname] = img  # Cache the resized image
                             
                         except Exception as e:
@@ -466,7 +466,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
 
             print('ce min {0}, ce max {1}, cos min {2}, cos max {3}, norm ce {4}, norm cos{5}'.format(ce_min, ce_max, cos_min, cos_max, normalized_ce_loss, normalized_cos_loss))
 
-            mse_loss = nn.functional.mse_loss(output, y.float().unsqueeze(1))
+            mse_loss = nn.functional.mse_loss(output, nn.functional.one_hot(y, num_classes=2).float())
 
             if normalized_ce_loss < normalized_cos_loss:
                 back_loss = ce_loss

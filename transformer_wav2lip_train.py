@@ -163,26 +163,22 @@ class Dataset(object):
 
     def __getitem__(self, idx):
         #start_time = time.perf_counter()
-        circuit_breaker_counter = 0
-        previous_vid = ""
+        
+        should_load_diff_video = False
 
         while 1:
-            #idx = random.randint(0, len(self.all_videos) - 1)
+            if should_load_diff_video:
+                idx = random.randint(0, len(self.all_videos) - 1)
+                should_load_diff_video = False
+
             vidname = self.all_videos[idx]
 
-            if vidname == previous_vid:
-                circuit_breaker_counter += 1
-
-            previous_vid = vidname
-
             img_names = list(glob(join(vidname, '*.jpg')))
-            if len(img_names) <= 3 * syncnet_T:
-                continue
             
-            if circuit_breaker_counter > 4500:
-                print('Circuit breaker in, the problem video is ', vidname)
-                circuit_breaker_counter = 0
-                continue
+            if len(img_names) <= 3 * syncnet_T:
+                print('The length', len(img_names))
+                should_load_diff_video = True
+            
 
             img_name = random.choice(img_names)
             wrong_img_name = random.choice(img_names)
@@ -192,15 +188,15 @@ class Dataset(object):
             window_fnames = self.get_window(img_name)
             wrong_window_fnames = self.get_window(wrong_img_name)
             if window_fnames is None or wrong_window_fnames is None:
-                continue
+                should_load_diff_video = True
 
             window = self.read_window(window_fnames)
             if window is None:
-                continue
+                should_load_diff_video = True
 
             wrong_window = self.read_window(wrong_window_fnames)
             if wrong_window is None:
-                continue
+                should_load_diff_video = True
 
             try:
                 wavpath = join(vidname, "audio.wav")
@@ -249,6 +245,7 @@ class Dataset(object):
 
             except Exception as e:
                 print('An error has occured', vidname, img_name, wrong_img_name)
+                print(e)
                 continue
 
 def save_sample_images(x, g, gt, global_step, checkpoint_dir):
@@ -286,7 +283,7 @@ def contrastive_loss(a, v, y, margin=0.5):
     return loss
 
 device = torch.device("cuda" if use_cuda else "cpu")
-syncnet = SyncNet(embed_size=256, num_heads=8, num_encoder_layers=6).to(device)
+syncnet = SyncNet(num_heads=8, num_encoder_layers=6).to(device)
 for p in syncnet.parameters():
     p.requires_grad = False
 

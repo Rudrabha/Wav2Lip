@@ -189,14 +189,17 @@ class Dataset(object):
             wrong_window_fnames = self.get_window(wrong_img_name)
             if window_fnames is None or wrong_window_fnames is None:
                 should_load_diff_video = True
+                continue
 
             window = self.read_window(window_fnames)
             if window is None:
                 should_load_diff_video = True
+                continue
 
             wrong_window = self.read_window(wrong_window_fnames)
             if wrong_window is None:
                 should_load_diff_video = True
+                continue
 
             try:
                 wavpath = join(vidname, "audio.wav")
@@ -228,6 +231,8 @@ class Dataset(object):
                 indiv_mels contains the corresponding audio for the given window
                 y is the window that without the second half black out
                 '''
+
+                
                 window[:, :, window.shape[2]//2:] = 0.
 
                 wrong_window = self.prepare_window(wrong_window)
@@ -270,8 +275,13 @@ def save_sample_images(x, g, gt, global_step, checkpoint_dir):
 logloss = nn.BCELoss()
 def cosine_loss(a, v, y):
     d = nn.functional.cosine_similarity(a, v)
-    loss = logloss(d.unsqueeze(1), y)
-
+    
+    # Scale cosine similarity to range [0, 1]
+    cos_sim_scaled = (1 + d) / 2.0
+    
+    # Calculate the loss: the target is 1 for similar pairs and 0 for dissimilar pairs
+    loss = nn.functional.mse_loss(cos_sim_scaled, y.float())
+    
     return loss
 
 def contrastive_loss(a, v, y, margin=0.5):
@@ -294,8 +304,10 @@ def get_sync_loss(mel, g):
     g = g[:, :, :, g.size(3)//2:]
     g = torch.cat([g[:, :, i] for i in range(syncnet_T)], dim=1)
     # B, 3 * T, H//2, W
-    output = syncnet(g, mel)
-    y = torch.ones(g.size(0), dtype=torch.long).to(device) 
+    output, audio_embedding, face_embedding = syncnet(g, mel)
+
+    y = torch.ones(g.size(0), dtype=torch.long).squeeze().to(device)
+    
     return cross_entropy_loss(output, y)
 
 def perceptual_loss(gen_features, gt_features):

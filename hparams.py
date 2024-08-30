@@ -82,10 +82,10 @@ hparams = HParams(
 	num_workers=16,
 	checkpoint_interval=2000,
 	eval_interval=2000,
-    save_optimizer_state=True,
+  save_optimizer_state=True,
 
-    syncnet_wt=0.0, # is initially zero, will be set automatically to 0.03 later. Leads to faster convergence. 
-		#syncnet_wt=0.03, # is initially set by eddy, will be set automatically to 0.01 later.  
+  syncnet_wt=0.0, # is initially zero, will be set automatically to 0.03 later. Leads to faster convergence. 
+	#syncnet_wt=0.03, # is initially set by eddy, will be set automatically to 0.01 later.  
 	syncnet_batch_size=196,
 	syncnet_lr=5e-5,
 	syncnet_eval_interval=1000,

@@ -97,7 +97,7 @@ class Dataset(object):
                         break
                     try:
                         img = cv2.resize(img, (hparams.img_size, hparams.img_size))
-                        if len(image_cache) < 350000:
+                        if len(image_cache) < 280000:
                           image_cache[fname] = img  # Cache the resized image and preevent OOM
                         
                     except Exception as e:

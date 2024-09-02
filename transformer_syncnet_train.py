@@ -208,7 +208,7 @@ class Dataset(object):
                         try:
                             img = cv2.resize(img, (hparams.img_size, hparams.img_size))                            
                             
-                            if len(face_image_cache) < 280000:
+                            if len(face_image_cache) < hparams.img_cache_size:
                               face_image_cache[fname] = img  # Cache the resized image
                             
                         except Exception as e:

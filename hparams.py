@@ -93,6 +93,8 @@ hparams = HParams(
 
 	disc_wt=0.07,
 	disc_initial_learning_rate=1e-4,
+	
+  image_cache_size=285000
 )
 
 

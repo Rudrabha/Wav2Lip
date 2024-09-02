@@ -97,8 +97,8 @@ class Dataset(object):
                         break
                     try:
                         img = cv2.resize(img, (hparams.img_size, hparams.img_size))
-                        if len(image_cache) < 280000:
-                          image_cache[fname] = img  # Cache the resized image and preevent OOM
+                        if len(image_cache) < hparams.img_cache_size:
+                          image_cache[fname] = img  # Cache the resized image and prevent OOM
                         
                     except Exception as e:
                         break
@@ -380,6 +380,9 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
 
               l2loss = nn.functional.mse_loss(g, gt)
 
+              running_l1_loss += l1loss.item()
+              running_l2_loss += l2loss.item()
+
               '''
               If the syncnet_wt is 0.03, it means the sync_loss has 3% of the loss wheras the rest occupy 97% of the loss
               '''
@@ -407,6 +410,10 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
                       model, optimizer, global_step, checkpoint_dir, global_epoch)
 
               avg_img_loss = (running_img_loss) / (step + 1)
+
+              avg_l1_loss = running_l1_loss / (step + 1)
+
+              avg_l2_loss = running_l2_loss / (step + 1)
               
               if global_step % hparams.eval_interval == 0:
                 with torch.no_grad():
@@ -416,14 +423,18 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
                   if avg_img_loss < .01: # change 
                           hparams.set_hparam('syncnet_wt', 0.01) # without image GAN a lesser weight is sufficient
 
-              prog_bar.set_description('Step: {}, Avg Img Loss: {}, Sync Loss: {}, Lower Half Loss: {}, LR: {}'.format(global_step, avg_img_loss,
-                                                                      running_sync_loss / (step + 1), lower_half_l1_loss.item(), current_lr))
+              prog_bar.set_description('Step: {}, Img Loss: {}, Sync Loss: {}, Lower Half Loss: {}, L1: {}, L2: {}, LR: {}'.format(global_step, avg_img_loss,
+                                                                      running_sync_loss / (step + 1), lower_half_l1_loss.item(), avg_l1_loss, avg_l2_loss, current_lr))
               
-              metrics = {"train/img_loss": avg_img_loss, 
-                       "train/sync_loss": running_sync_loss / (step + 1), 
-                       "train/step": global_step,
-                       "train/lower_half_loss": lower_half_l1_loss.item(),
-                       "train/learning_rate": current_lr}
+              metrics = {
+                  "train/overall_loss": avg_img_loss, 
+                  "train/avg_l1": avg_l1_loss, 
+                  "train/avg_l2": avg_l2_loss, 
+                  "train/sync_loss": running_sync_loss / (step + 1), 
+                  "train/step": global_step,
+                  "train/lower_half_loss": lower_half_l1_loss.item(),
+                  "train/learning_rate": current_lr
+                  }
             
               wandb.log({**metrics})
 
@@ -517,7 +528,7 @@ def load_checkpoint(path, model, optimizer, reset_optimizer=False, overwrite_glo
 
     if optimizer != None:
       for param_group in optimizer.param_groups:
-        param_group['lr'] = 0.00001
+        param_group['lr'] = 0.00002
 
     return model
 

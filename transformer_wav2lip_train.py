@@ -97,7 +97,7 @@ class Dataset(object):
                         break
                     try:
                         img = cv2.resize(img, (hparams.img_size, hparams.img_size))
-                        if len(image_cache) < hparams.img_cache_size:
+                        if len(image_cache) < hparams.image_cache_size:
                           image_cache[fname] = img  # Cache the resized image and prevent OOM
                         
                     except Exception as e:
@@ -388,7 +388,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
               '''
 
               #l1l2_loss = 0.8 * l1loss + 0.2 * l2loss
-              loss = hparams.syncnet_wt * sync_loss + (1 - hparams.syncnet_wt) * (0.3 * l2loss + 0.7 * lower_half_l1_loss)
+              loss = hparams.syncnet_wt * sync_loss + (1 - hparams.syncnet_wt) * l1loss
               
               l1loss.backward()
               optimizer.step()

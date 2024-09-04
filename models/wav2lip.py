@@ -95,6 +95,8 @@ class Wav2Lip(nn.Module):
         self.output_block = nn.Sequential(Conv2d(96, 32, kernel_size=3, stride=1, padding=1),
             nn.Conv2d(32, 3, kernel_size=1, stride=1, padding=0),
             nn.Sigmoid())
+        
+        
 
     def forward(self, audio_sequences, face_sequences):
         # audio_sequences = (B, T, 1, 80, 16)

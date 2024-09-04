@@ -99,9 +99,43 @@ class Dataset(object):
                         img = cv2.resize(img, (hparams.img_size, hparams.img_size))
                         if len(image_cache) < hparams.image_cache_size:
                           image_cache[fname] = img  # Cache the resized image and prevent OOM
+                    
                         
                     except Exception as e:
                         break
+                    
+                    '''
+                    Data augmentation
+                    0 means unchange
+                    1 for grayscale
+                    2 for brightness
+                    3 for contrast
+                    '''
+                    option = random.choices([0, 1, 2, 3, 4])[0] 
+                    
+                    if option == 1:
+                        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                        img = cv2.merge([img_gray, img_gray, img_gray])
+                    elif option == 2:
+                        brightness_factor = np.random.uniform(0.7, 1.3)
+                        img = cv2.convertScaleAbs(img, alpha=brightness_factor, beta=0)
+                    elif option == 3:
+                        contrast_factor = np.random.uniform(0.7, 1.3)
+                        img = cv2.convertScaleAbs(img, alpha=contrast_factor, beta=0)
+                    elif option == 4:
+                        angle = np.random.uniform(-15, 15)  # Random angle between -15 and 15 degrees
+
+                        # Get the image dimensions
+                        (h, w) = img.shape[:2]
+
+                        # Calculate the center of the image
+                        center = (w // 2, h // 2)
+
+                        # Get the rotation matrix
+                        rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
+
+                        # Perform the rotation
+                        img = cv2.warpAffine(img, rotation_matrix, (w, h))
 
                 window.append(img)
 
@@ -516,7 +550,7 @@ def load_checkpoint(path, model, optimizer, reset_optimizer=False, overwrite_glo
     new_s = {}
     for k, v in s.items():
         new_s[k.replace('module.', '')] = v
-    model.load_state_dict(new_s)
+    model.load_state_dict(new_s, strict=False)
     if not reset_optimizer:
         optimizer_state = checkpoint["optimizer"]
         if optimizer_state is not None:

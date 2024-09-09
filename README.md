@@ -1,12 +1,12 @@
 # **Wav2Lip**: *Accurately Lip-syncing Videos In The Wild* 
 
-### Wav2Lip is hosted for free at [Sync Labs](https://synclabs.so/)
+### Wav2Lip is hosted for free at [Sync Labs](https://sync.so/)
 
-Are you looking to integrate this into a product? We have a turn-key hosted API with new and improved lip-syncing models here: https://synclabs.so/
+Are you looking to integrate this into a product? We have a turn-key hosted API with new and improved lip-syncing models here: https://sync.so/
 
-For any other commercial / enterprise requests, please contact us at pavan@synclabs.so and prady@synclabs.so
+For any other commercial / enterprise requests, please contact us at pavan@synclabs.so and prady@sync.so
 
-To reach out to the authors directly you can reach us at prajwal@synclabs.so, rudrabha@synclabs.so.
+To reach out to the authors directly you can reach us at prajwal@synclabs.so, rudrabha@sync.so.
 
 This code is part of the paper: _A Lip Sync Expert Is All You Need for Speech to Lip Generation In the Wild_ published at ACM Multimedia 2020. 
 

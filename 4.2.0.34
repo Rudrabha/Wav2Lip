@@ -1,0 +1,13 @@
+Collecting opencv-contrib-python
+  Using cached opencv-contrib-python-4.10.0.84.tar.gz (150.4 MB)
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Getting requirements to build wheel: started
+  Getting requirements to build wheel: finished with status 'done'
+    Preparing wheel metadata: started
+    Preparing wheel metadata: finished with status 'done'
+Requirement already satisfied: numpy>=1.13.3 in c:\users\arda\anaconda3\envs\uc\lib\site-packages (from opencv-contrib-python) (1.17.1)
+Building wheels for collected packages: opencv-contrib-python
+  Building wheel for opencv-contrib-python (PEP 517): started
+  Building wheel for opencv-contrib-python (PEP 517): finished with status 'error'
+Failed to build opencv-contrib-python

@@ -1,0 +1,8 @@
+librosa==0.10.2.post1
+numba==0.60.0
+numpy==2.0.2
+torch==2.5.1
+torchvision==0.20.1
+tqdm==4.66.6
+opencv-contrib-python==4.10.0.84
+opencv-python==4.10.0.84

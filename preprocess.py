@@ -59,9 +59,9 @@ def process_video_file(vfile, args, gpu_id):
 		preds = fa[gpu_id].get_detections_for_batch(np.asarray(fb))
 
 		for j, f in enumerate(preds):
-			i += 1
 			if f is None:
 				continue
+			i += 1
 
 			x1, y1, x2, y2 = f
 			cv2.imwrite(path.join(fulldir, '{}.jpg'.format(i)), fb[j][y1:y2, x1:x2])

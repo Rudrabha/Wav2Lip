@@ -1,5 +1,3 @@
-![Frame 2 (1)](https://github.com/user-attachments/assets/bc086d8b-efe3-4e75-85fc-e491481cec61)
-
 # **Wav2Lip**: *Accurately Lip-syncing Videos In The Wild* 
 ### Wav2Lip is hosted for free at [Sync Labs](https://sync.so/)
 Are you looking to integrate this into a product? We have a turn-key hosted API with new and improved lip-syncing models here: https://sync.so/
@@ -13,13 +11,9 @@ This code is part of the paper: _A Lip Sync Expert Is All You Need for Speech to
 |:-:|:-:|:-:|:-:|:-:|
 [Paper](http://arxiv.org/abs/2008.10010) | [Project Page](http://cvit.iiit.ac.in/research/projects/cvit-projects/a-lip-sync-expert-is-all-you-need-for-speech-to-lip-generation-in-the-wild/) | [Demo Video](https://youtu.be/0fXaDCZNOJc) | [Interactive Demo](https://synclabs.so/) | [Colab Notebook](https://colab.research.google.com/drive/1tZpDWXz49W6wDcTprANRGLo2D_EbD5J8?usp=sharing) /[Updated Collab Notebook](https://colab.research.google.com/drive/1IjFW1cLevs6Ouyu4Yht4mnR4yeuMqO7Y#scrollTo=MH1m608OymLH)
  
-<img alt="Logodd" src="https://github.com/user-attachments/assets/011ecb99-719b-4430-8795-3963228844e2">
-
+![Logo](https://drive.google.com/uc?export=view&id=1Wn0hPmpo4GRbCIJR8Tf20Akzdi1qjjG9)
 ----------
 **Highlights**
-
-
-![Group 1597882588](https://github.com/user-attachments/assets/13b7f445-cdd0-4144-a623-23ecb202018d)
 ----------
  - Weights of the visual quality disc has been updated in readme!
  - Lip-sync videos to any target speech with high accuracy :100:. Try our [interactive demo](https://synclabs.so/).
@@ -27,13 +21,6 @@ This code is part of the paper: _A Lip Sync Expert Is All You Need for Speech to
  - Complete training code, inference code, and pretrained models are available :boom:
  - Or, quick-start with the Google Colab Notebook: [Link](https://colab.research.google.com/drive/1tZpDWXz49W6wDcTprANRGLo2D_EbD5J8?usp=sharing). Checkpoints and samples are available in a Google Drive [folder](https://drive.google.com/drive/folders/1I-0dNLfFOSFwrfqjNa-SXuwaURHE5K4k?usp=sharing) as well. There is also a [tutorial video](https://www.youtube.com/watch?v=Ic0TBhfuOrA) on this, courtesy of [What Make Art](https://www.youtube.com/channel/UCmGXH-jy0o2CuhqtpxbaQgA). Also, thanks to [Eyal Gruss](https://eyalgruss.com), there is a more accessible [Google Colab notebook](https://j.mp/wav2lip) with more useful features. A tutorial collab notebook is present at this [link](https://colab.research.google.com/drive/1IjFW1cLevs6Ouyu4Yht4mnR4yeuMqO7Y#scrollTo=MH1m608OymLH).  
  - :fire: :fire: Several new, reliable evaluation benchmarks and metrics [[`evaluation/` folder of this repo]](https://github.com/Rudrabha/Wav2Lip/tree/master/evaluation) released. Instructions to calculate the metrics reported in the paper are also present.
-
-# Contact us
-For any other commercial / enterprise requests, please contact us at
-
-
-[![Group 13534asdasfdfdsdf](https://github.com/user-attachments/assets/893eb6f4-c177-4045-a19c-ea4922613c9e)](https://calendly.com/pavan-sync/learn-more-about-latest-wav2lip-models)
-
 --------
 **Disclaimer**
 --------
@@ -45,8 +32,6 @@ Prerequisites
 - Install necessary packages using `pip install -r requirements.txt`. Alternatively, instructions for using a docker image is provided [here](https://gist.github.com/xenogenesi/e62d3d13dadbc164124c830e9c453668). Have a look at [this comment](https://github.com/Rudrabha/Wav2Lip/issues/131#issuecomment-725478562) and comment on [the gist](https://gist.github.com/xenogenesi/e62d3d13dadbc164124c830e9c453668) if you encounter any issues. 
 - Face detection [pre-trained model](https://www.adrianbulat.com/downloads/python-fan/s3fd-619a316812.pth) should be downloaded to `face_detection/detection/sfd/s3fd.pth`. Alternative [link](https://iiitaphyd-my.sharepoint.com/:u:/g/personal/prajwal_k_research_iiit_ac_in/EZsy6qWuivtDnANIG73iHjIBjMSoojcIV0NULXV-yiuiIg?e=qTasa8) if the above does not work.
 Getting the weights
-
-[![Group 13534](https://github.com/user-attachments/assets/977ba358-c716-4576-87d1-738b37eba9e6)](https://sync.so/)
 ----------
 | Model  | Description |  Link to the model | 
 | :-------------: | :---------------: | :---------------: |

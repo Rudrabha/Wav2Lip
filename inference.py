@@ -231,6 +231,10 @@ def main():
 	mel_chunks = []
 	mel_idx_multiplier = 80./fps 
 	i = 0
+	
+	if not os.path.exists(args.checkpoint_path):
+		print("Weights file not loaded, Please download it first from Wav2Lip repo -> https://github.com/Rudrabha/Wav2Lip")
+		return
 	while 1:
 		start_idx = int(i * mel_idx_multiplier)
 		if start_idx + mel_step_size > len(mel[0]):

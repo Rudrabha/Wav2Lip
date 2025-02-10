@@ -1,5 +1,5 @@
 # **Wav2Lip**: *Accurately Lip-syncing Videos In The Wild* 
-### Wav2Lip is hosted for free at [sync.](https://sync.so/)
+### A commercial version of Wav2Lip can be directly accessed at https://sync.so
 Are you looking to integrate this into a product? We have a turn-key hosted API with new and improved lip-syncing models here: https://sync.so/
 For any other commercial / enterprise requests, please contact us at pavan@sync.so and prady@sync.so
 To reach out to the authors directly you can reach us at prajwal@sync.so, rudrabha@sync.so.

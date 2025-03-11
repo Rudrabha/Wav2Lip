@@ -1,4 +1,6 @@
+import os
 from os import listdir, path
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"
 import numpy as np
 import scipy, cv2, os, sys, argparse, audio
 import json, subprocess, random, string
@@ -202,7 +204,7 @@ def main():
 				frame = cv2.resize(frame, (frame.shape[1]//args.resize_factor, frame.shape[0]//args.resize_factor))
 
 			if args.rotate:
-				frame = cv2.rotate(frame, cv2.cv2.ROTATE_90_CLOCKWISE)
+				frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
 			y1, y2, x1, x2 = args.crop
 			if x2 == -1: x2 = frame.shape[1]

@@ -1,0 +1,9 @@
+librosa
+numpy
+opencv-contrib-python
+opencv-python
+-f https://download.pytorch.org/whl/torch_stable.html
+torch
+torchvision
+tqdm
+numba

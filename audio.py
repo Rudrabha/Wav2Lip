@@ -4,6 +4,7 @@ import numpy as np
 # import tensorflow as tf
 from scipy import signal
 from scipy.io import wavfile
+import soundfile as sf
 from hparams import hparams as hp
 
 def load_wav(path, sr):
@@ -15,7 +16,7 @@ def save_wav(wav, path, sr):
     wavfile.write(path, sr, wav.astype(np.int16))
 
 def save_wavenet_wav(wav, path, sr):
-    librosa.output.write_wav(path, wav, sr=sr)
+    sf.write(path, wav, sr, subtype="PCM_16")
 
 def preemphasis(wav, k, preemphasize=True):
     if preemphasize:
@@ -97,7 +98,7 @@ def _linear_to_mel(spectogram):
 
 def _build_mel_basis():
     assert hp.fmax <= hp.sample_rate // 2
-    return librosa.filters.mel(hp.sample_rate, hp.n_fft, n_mels=hp.num_mels,
+    return librosa.filters.mel(sr=hp.sample_rate, n_fft=hp.n_fft, n_mels=hp.num_mels,
                                fmin=hp.fmin, fmax=hp.fmax)
 
 def _amp_to_db(x):

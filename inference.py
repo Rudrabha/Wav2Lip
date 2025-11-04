@@ -158,25 +158,43 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print('Using {} for inference.'.format(device))
 
 def _load(checkpoint_path):
-	if device == 'cuda':
-		checkpoint = torch.load(checkpoint_path)
-	else:
-		checkpoint = torch.load(checkpoint_path,
-								map_location=lambda storage, loc: storage)
-	return checkpoint
+	map_location = torch.device(device)
+	return torch.load(checkpoint_path, map_location=map_location)
+
+def _resolve_checkpoint_path(checkpoint_path):
+	if os.path.isdir(checkpoint_path):
+		candidates = sorted(glob(os.path.join(checkpoint_path, '*.pt')) +
+							glob(os.path.join(checkpoint_path, '*.pth')))
+		if not candidates:
+			raise ValueError('未在目录 {} 中找到 *.pt 或 *.pth 权重文件'.format(checkpoint_path))
+		print('检测到目录输入，将使用权重文件: {}'.format(candidates[0]))
+		return candidates[0]
+	return checkpoint_path
+
 
 def load_model(path):
-	model = Wav2Lip()
+	path = _resolve_checkpoint_path(path)
 	print("Load checkpoint from: {}".format(path))
-	checkpoint = _load(path)
-	s = checkpoint["state_dict"]
-	new_s = {}
-	for k, v in s.items():
-		new_s[k.replace('module.', '')] = v
-	model.load_state_dict(new_s)
 
-	model = model.to(device)
-	return model.eval()
+	ext = os.path.splitext(path)[1].lower()
+	if ext == '.pt':
+		model = torch.jit.load(path, map_location=torch.device(device))
+		return model.to(device).eval()
+
+	checkpoint = _load(path)
+	if isinstance(checkpoint, dict) and "state_dict" in checkpoint:
+		model = Wav2Lip()
+		state_dict = checkpoint["state_dict"]
+		new_state_dict = {}
+		for k, v in state_dict.items():
+			new_state_dict[k.replace('module.', '')] = v
+		model.load_state_dict(new_state_dict)
+	elif isinstance(checkpoint, torch.nn.Module):
+		model = checkpoint
+	else:
+		raise TypeError("无法识别的模型检查点格式: {}".format(type(checkpoint)))
+
+	return model.to(device).eval()
 
 def main():
 	if not os.path.isfile(args.face):

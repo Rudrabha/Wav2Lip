@@ -7,6 +7,7 @@ from glob import glob
 import torch, face_detection
 from models import Wav2Lip
 import platform
+from tts import PROVIDERS, api_key_env, synthesize_speech
 
 parser = argparse.ArgumentParser(description='Inference code to lip-sync videos in the wild using Wav2Lip models')
 
@@ -16,7 +17,17 @@ parser.add_argument('--checkpoint_path', type=str,
 parser.add_argument('--face', type=str, 
 					help='Filepath of video/image that contains faces to use', required=True)
 parser.add_argument('--audio', type=str, 
-					help='Filepath of video/audio file to use as raw audio source', required=True)
+					help='Filepath of video/audio file to use as raw audio source')
+parser.add_argument('--text', type=str,
+					help='Text to synthesize with a TTS provider instead of using --audio')
+parser.add_argument('--tts_provider', choices=PROVIDERS, default='elevenlabs',
+					help='Text-to-speech provider (default: elevenlabs)')
+parser.add_argument('--tts_voice', type=str,
+					help='Provider-native voice name or ID')
+parser.add_argument('--tts_model', type=str,
+					help='Provider-native text-to-speech model name')
+parser.add_argument('--tts_output_format', type=str,
+					help='Provider-native audio output format')
 parser.add_argument('--outfile', type=str, help='Video path to save result. See default for an e.g.', 
 								default='results/result_voice.mp4')
 
@@ -52,6 +63,14 @@ parser.add_argument('--nosmooth', default=False, action='store_true',
 
 args = parser.parse_args()
 args.img_size = 96
+
+if bool(args.audio) == bool(args.text):
+	parser.error('provide exactly one of --audio or --text')
+if args.text and args.tts_provider == 'elevenlabs' and not args.tts_voice:
+	parser.error('--tts_voice is required for the ElevenLabs provider')
+if args.text and not os.environ.get(api_key_env(args.tts_provider)):
+	parser.error('set {} when using --text with {}'.format(
+		api_key_env(args.tts_provider), args.tts_provider))
 
 if os.path.isfile(args.face) and args.face.split('.')[1] in ['jpg', 'png', 'jpeg']:
 	args.static = True
@@ -181,6 +200,8 @@ def load_model(path):
 def main():
 	if not os.path.isfile(args.face):
 		raise ValueError('--face argument must be a valid path to video/image file')
+	if not os.path.isfile(args.checkpoint_path):
+		raise ValueError('--checkpoint_path must be a valid path to a checkpoint file')
 
 	elif args.face.split('.')[1] in ['jpg', 'png', 'jpeg']:
 		full_frames = [cv2.imread(args.face)]
@@ -213,6 +234,21 @@ def main():
 			full_frames.append(frame)
 
 	print ("Number of frames available for inference: "+str(len(full_frames)))
+	if not full_frames:
+		raise ValueError('--face did not contain any readable video frames')
+
+	if args.text:
+		print('Generating speech with {}...'.format(args.tts_provider))
+		args.audio = synthesize_speech(
+			args.tts_provider,
+			args.text,
+			'temp/tts_audio',
+			os.environ[api_key_env(args.tts_provider)],
+			voice=args.tts_voice,
+			model=args.tts_model,
+			output_format=args.tts_output_format,
+		)
+		print('Synthesized speech saved to {}'.format(args.audio))
 
 	if not args.audio.endswith('.wav'):
 		print('Extracting raw audio...')

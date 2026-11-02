@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wav2lip-engine"
-version = "0.2.0"
+version = "0.2.1"
 description = "Modernized, pip-installable Wav2Lip lip-sync engine with auto-downloading models"
 readme = "README.md"
 requires-python = ">=3.9"

@@ -229,8 +229,12 @@ class Wav2LipPipeline:
             i += 1
 
         # 3. Detect face bounding boxes
+        total_chunks = len(mel_chunks)
         if box[0] == -1:
             if not static_image:
+                # Only detect faces in frames needed for the audio (matching original Wav2Lip behavior)
+                if len(full_frames) > total_chunks:
+                    full_frames = full_frames[:total_chunks]
                 face_det_results, full_frames = self._face_detect(
                     full_frames, pads=pads, nosmooth=nosmooth, batch_size=face_det_batch_size
                 )
@@ -239,6 +243,8 @@ class Wav2LipPipeline:
                     [full_frames[0]], pads=pads, nosmooth=nosmooth, batch_size=1
                 )
         else:
+            if not static_image and len(full_frames) > total_chunks:
+                full_frames = full_frames[:total_chunks]
             y1, y2, x1, x2 = box
             face_det_results = [[f[y1:y2, x1:x2], (y1, y2, x1, x2)] for f in full_frames]
 

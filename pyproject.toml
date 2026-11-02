@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=64.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wav2lip-engine"
+version = "0.2.0"
+description = "Modernized, pip-installable Wav2Lip lip-sync engine with auto-downloading models"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+    { name = "AvatarSync Team" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Multimedia :: Video",
+]
+dependencies = [
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "numpy>=1.22.0",
+    "opencv-python-headless>=4.8.0",
+    "librosa>=0.10.0",
+    "soundfile>=0.12.0",
+    "scipy>=1.10.0",
+    "tqdm>=4.65.0",
+    "huggingface-hub>=0.20.0",
+]
+
+[project.scripts]
+wav2lip = "wav2lip.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["wav2lip*"]

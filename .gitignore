@@ -1,16 +1,39 @@
-*.pkl
-*.jpg
-*.mp4
+# Model checkpoints (automatically fetched via Hugging Face Hub)
 *.pth
-*.pyc
-__pycache__
-*.h5
-*.avi
-*.wav
-filelists/*.txt
-evaluation/test_filelists/lr*.txt
-*.pyc
-*.mkv
-*.gif
-*.webm
-*.mp3
+*.pt
+checkpoints/
+
+# Intermediate and output files
+temp/
+results/
+
+# Python cache & build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/

@@ -63,6 +63,7 @@ hparams = HParams(
 	# levels. Also allows for better G&L phase reconstruction)
 	preemphasize=True,  # whether to apply filter
 	preemphasis=0.97,  # filter coefficient.
+	k=0.97,            # alias for filter coefficient
 	
 	# Limits
 	min_level_db=-100,

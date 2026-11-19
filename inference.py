@@ -8,6 +8,15 @@ import torch, face_detection
 from models import Wav2Lip
 import platform
 
+def parse_static(value):
+	value = value.lower()
+	if value == 'true':
+		return True
+	if value == 'false':
+		return False
+	raise argparse.ArgumentTypeError("expected 'true' or 'false'")
+
+
 parser = argparse.ArgumentParser(description='Inference code to lip-sync videos in the wild using Wav2Lip models')
 
 parser.add_argument('--checkpoint_path', type=str, 
@@ -20,7 +29,7 @@ parser.add_argument('--audio', type=str,
 parser.add_argument('--outfile', type=str, help='Video path to save result. See default for an e.g.', 
 								default='results/result_voice.mp4')
 
-parser.add_argument('--static', type=bool, 
+parser.add_argument('--static', type=parse_static,
 					help='If True, then use only first video frame for inference', default=False)
 parser.add_argument('--fps', type=float, help='Can be specified only if input is a static image (default: 25)', 
 					default=25., required=False)
